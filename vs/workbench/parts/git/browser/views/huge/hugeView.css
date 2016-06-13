@@ -3,14 +3,10 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { createDecorator, ServiceIdentifier } from 'vs/platform/instantiation/common/instantiation';
+.git-viewlet > .huge-view {
+	padding: 0 20px 0 20px;
+}
 
-export const IEnvironmentService = createDecorator<IEnvironmentService>('environmentService');
-
-export interface IEnvironmentService {
-	serviceId: ServiceIdentifier<any>;
-
-	appRoot: string;
-	userDataPath: string;
-	extensionsPath: string;
+.git-viewlet > .huge-view > p {
+	line-height: 1.5em;
 }
