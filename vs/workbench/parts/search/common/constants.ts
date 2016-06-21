@@ -3,11 +3,4 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-.monaco-workbench .iframe-container .iframe {
-	box-sizing:			border-box;
-}
-
-.monaco-workbench .iframe-container.ipad-touch-enabled {
-	-webkit-overflow-scrolling: touch;
-	overflow: auto;
-}
+export const VIEWLET_ID = 'workbench.view.search';
