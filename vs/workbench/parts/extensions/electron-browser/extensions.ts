@@ -5,7 +5,8 @@
 
 'use strict';
 
+import {IViewlet} from 'vs/workbench/common/viewlet';
 
-import 'vs/languages/handlebars/common/handlebars.contribution';
-import 'vs/languages/html/common/html.contribution';
-import 'vs/languages/razor/common/razor.contribution';
+export interface IExtensionsViewlet extends IViewlet {
+	search(text: string, immediate?: boolean): void;
+}
