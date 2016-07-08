@@ -24,7 +24,8 @@ import renderer = require('vs/base/parts/tree/browser/actionsRenderer');
 import debug = require('vs/workbench/parts/debug/common/debug');
 import model = require('vs/workbench/parts/debug/common/debugModel');
 import viewmodel = require('vs/workbench/parts/debug/common/debugViewModel');
-import debugactions = require('vs/workbench/parts/debug/electron-browser/debugActions');
+import debugactions = require('vs/workbench/parts/debug/browser/debugActions');
+import { CopyValueAction } from 'vs/workbench/parts/debug/electron-browser/electronDebugActions';
 import { IContextViewService, IContextMenuService } from 'vs/platform/contextview/browser/contextView';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { IWorkspaceContextService } from 'vs/platform/workspace/common/workspace';
@@ -76,7 +77,7 @@ export function renderVariable(tree: tree.ITree, variable: model.Variable, data:
 
 	if (variable.value) {
 		renderExpressionValue(variable, data.value, showChanged, MAX_VALUE_RENDER_LENGTH_IN_VIEWLET);
-		data.expression.title = variable.value;
+		data.value.title = variable.value;
 	} else {
 		data.value.textContent = '';
 		data.value.title = '';
@@ -539,7 +540,7 @@ export class VariablesActionProvider implements renderer.IActionProvider {
 		const variable = <model.Variable>element;
 		if (variable.reference === 0) {
 			actions.push(this.instantiationService.createInstance(debugactions.SetValueAction, debugactions.SetValueAction.ID, debugactions.SetValueAction.LABEL, variable));
-			actions.push(this.instantiationService.createInstance(debugactions.CopyValueAction, debugactions.CopyValueAction.ID, debugactions.CopyValueAction.LABEL, variable));
+			actions.push(this.instantiationService.createInstance(CopyValueAction, CopyValueAction.ID, CopyValueAction.LABEL, variable));
 			actions.push(new actionbar.Separator());
 		}
 
@@ -632,7 +633,7 @@ export class VariablesRenderer implements tree.IRenderer {
 		}
 
 		let data: IVariableTemplateData = Object.create(null);
-		data.expression = dom.append(container, $(isMacintosh ? '.expression.mac' : '.expression.win-linux'));
+		data.expression = dom.append(container, $('.expression'));
 		data.name = dom.append(data.expression, $('span.name'));
 		data.value = dom.append(data.expression, $('span.value'));
 
@@ -683,6 +684,11 @@ export class VariablesAccessibilityProvider implements tree.IAccessibilityProvid
 
 export class VariablesController extends BaseDebugController {
 
+	constructor(debugService: debug.IDebugService, contextMenuService: IContextMenuService, actionProvider: renderer.IActionProvider) {
+		super(debugService, contextMenuService, actionProvider);
+		this.downKeyBindingDispatcher.set(CommonKeybindings.ENTER, this.setSelectedExpression.bind(this));
+	}
+
 	protected onLeftClick(tree: tree.ITree, element: any, event: IMouseEvent): boolean {
 		// double click on primitive value: open input box to be able to set the value
 		if (element instanceof model.Variable && event.detail === 2) {
@@ -694,6 +700,16 @@ export class VariablesController extends BaseDebugController {
 		}
 
 		return super.onLeftClick(tree, element, event);
+	}
+
+	protected setSelectedExpression(tree: tree.ITree, event: KeyboardEvent): boolean {
+		const element = tree.getFocus();
+		if (element instanceof model.Variable && element.reference === 0) {
+			this.debugService.getViewModel().setSelectedExpression(element);
+			return true;
+		}
+
+		return false;
 	}
 }
 
@@ -730,7 +746,7 @@ export class WatchExpressionsActionProvider implements renderer.IActionProvider 
 			actions.push(this.instantiationService.createInstance(debugactions.AddWatchExpressionAction, debugactions.AddWatchExpressionAction.ID, debugactions.AddWatchExpressionAction.LABEL));
 			actions.push(this.instantiationService.createInstance(debugactions.RenameWatchExpressionAction, debugactions.RenameWatchExpressionAction.ID, debugactions.RenameWatchExpressionAction.LABEL, expression));
 			if (expression.reference === 0) {
-				actions.push(this.instantiationService.createInstance(debugactions.CopyValueAction, debugactions.CopyValueAction.ID, debugactions.CopyValueAction.LABEL, expression.value));
+				actions.push(this.instantiationService.createInstance(CopyValueAction, CopyValueAction.ID, CopyValueAction.LABEL, expression.value));
 			}
 			actions.push(new actionbar.Separator());
 
@@ -741,7 +757,7 @@ export class WatchExpressionsActionProvider implements renderer.IActionProvider 
 			if (element instanceof model.Variable) {
 				const variable = <model.Variable>element;
 				if (variable.reference === 0) {
-					actions.push(this.instantiationService.createInstance(debugactions.CopyValueAction, debugactions.CopyValueAction.ID, debugactions.CopyValueAction.LABEL, variable.value));
+					actions.push(this.instantiationService.createInstance(CopyValueAction, CopyValueAction.ID, CopyValueAction.LABEL, variable.value));
 				}
 				actions.push(new actionbar.Separator());
 			}
@@ -828,7 +844,7 @@ export class WatchExpressionsRenderer implements tree.IRenderer {
 			data.actionBar.push(this.actionProvider.getExpressionActions(), { icon: true, label: false });
 		}
 
-		data.expression = dom.append(container, $(isMacintosh ? '.expression.mac' : '.expression.win-linux'));
+		data.expression = dom.append(container, $('.expression'));
 		data.name = dom.append(data.expression, $('span.name'));
 		data.value = dom.append(data.expression, $('span.value'));
 
@@ -975,7 +991,7 @@ export class BreakpointsActionProvider implements renderer.IActionProvider {
 		actions.push(this.instantiationService.createInstance(debugactions.RemoveAllBreakpointsAction, debugactions.RemoveAllBreakpointsAction.ID, debugactions.RemoveAllBreakpointsAction.LABEL));
 		actions.push(new actionbar.Separator());
 
-		actions.push(this.instantiationService.createInstance(debugactions.ToggleBreakpointsActivatedAction, debugactions.ToggleBreakpointsActivatedAction.ID, debugactions.ToggleBreakpointsActivatedAction.LABEL));
+		actions.push(this.instantiationService.createInstance(debugactions.ToggleBreakpointsActivatedAction, debugactions.ToggleBreakpointsActivatedAction.ID, debugactions.ToggleBreakpointsActivatedAction.ACTIVATE_LABEL));
 		actions.push(new actionbar.Separator());
 
 		actions.push(this.instantiationService.createInstance(debugactions.EnableAllBreakpointsAction, debugactions.EnableAllBreakpointsAction.ID, debugactions.EnableAllBreakpointsAction.LABEL));
@@ -1084,9 +1100,6 @@ export class BreakpointsRenderer implements tree.IRenderer {
 
 		data.checkbox = <HTMLInputElement>$('input');
 		data.checkbox.type = 'checkbox';
-		if (!isMacintosh) {
-			data.checkbox.className = 'checkbox-win-linux';
-		}
 
 		dom.append(data.breakpoint, data.checkbox);
 

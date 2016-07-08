@@ -2,16 +2,18 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-hr.outlineRule.class {
-	border: 0;
-	border-bottom: 2px solid gray;
-	width: 98%;	
-	margin: 0;
+
+/*
+	Keeping name short for faster parsing.
+	cigr = core ident guides rendering (div)
+*/
+.monaco-editor .lines-content .cigr {
+	position: absolute;
+	background: lightgray;
+	width: 1px;
 }
 
-hr.outlineRule.method, hr.outlineRule.function {
-	border: 0;
-	border-bottom: 1px dotted gray;
-	width: 98%;
-	margin: 0;	
+.monaco-editor.vs-dark .lines-content .cigr,
+.monaco-editor.hc-black .lines-content .cigr {
+	background: #353535;
 }

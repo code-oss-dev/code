@@ -8,7 +8,7 @@ import {TPromise} from 'vs/base/common/winjs.base';
 import URI from 'vs/base/common/uri';
 import errors = require('vs/base/common/errors');
 import Event, {Emitter} from 'vs/base/common/event';
-import {FileEditorInput} from 'vs/workbench/parts/files/browser/editors/fileEditorInput';
+import {FileEditorInput} from 'vs/workbench/parts/files/common/editors/fileEditorInput';
 import {CACHE, TextFileEditorModel} from 'vs/workbench/parts/files/common/editors/textFileEditorModel';
 import {IResult, ITextFileOperationResult, ITextFileService, IRawTextContent, IAutoSaveConfiguration, AutoSaveMode} from 'vs/workbench/parts/files/common/files';
 import {ConfirmResult} from 'vs/workbench/common/editor';
@@ -21,7 +21,6 @@ import {ITelemetryService} from 'vs/platform/telemetry/common/telemetry';
 import {IDisposable, dispose} from 'vs/base/common/lifecycle';
 import {IWorkbenchEditorService} from 'vs/workbench/services/editor/common/editorService';
 import {IEditorGroupService} from 'vs/workbench/services/group/common/groupService';
-import {ModelBuilder} from 'vs/editor/node/model/modelBuilder';
 import {IModelService} from 'vs/editor/common/services/modelService';
 
 /**
@@ -31,7 +30,7 @@ import {IModelService} from 'vs/editor/common/services/modelService';
  */
 export abstract class TextFileService implements ITextFileService {
 
-	public serviceId = ITextFileService;
+	public _serviceBrand: any;
 
 	private listenerToUnbind: IDisposable[];
 
@@ -49,7 +48,7 @@ export abstract class TextFileService implements ITextFileService {
 		@IEditorGroupService private editorGroupService: IEditorGroupService,
 		@IEventService private eventService: IEventService,
 		@IFileService protected fileService: IFileService,
-		@IModelService private modelService: IModelService
+		@IModelService protected modelService: IModelService
 	) {
 		this.listenerToUnbind = [];
 		this._onAutoSaveConfigurationChange = new Emitter<IAutoSaveConfiguration>();
@@ -64,23 +63,7 @@ export abstract class TextFileService implements ITextFileService {
 		this.telemetryService.publicLog('autoSave', this.getAutoSaveConfiguration());
 	}
 
-	public resolveTextContent(resource: URI, options?: IResolveContentOptions): TPromise<IRawTextContent> {
-		return this.fileService.resolveStreamContent(resource, options).then((streamContent) => {
-			return ModelBuilder.fromStringStream(streamContent.value, this.modelService.getCreationOptions()).then((res) => {
-				let r: IRawTextContent = {
-					resource: streamContent.resource,
-					name: streamContent.name,
-					mtime: streamContent.mtime,
-					etag: streamContent.etag,
-					mime: streamContent.mime,
-					encoding: streamContent.encoding,
-					value: res.rawText,
-					valueLogicalHash: res.hash
-				};
-				return r;
-			});
-		});
-	}
+	public abstract resolveTextContent(resource: URI, options?: IResolveContentOptions): TPromise<IRawTextContent>;
 
 	public get onAutoSaveConfigurationChange(): Event<IAutoSaveConfiguration> {
 		return this._onAutoSaveConfigurationChange.event;

@@ -18,13 +18,13 @@ import splitview = require('vs/base/browser/ui/splitview/splitview');
 import viewlet = require('vs/workbench/browser/viewlet');
 import debug = require('vs/workbench/parts/debug/common/debug');
 import { StackFrame, Expression, Variable, ExceptionBreakpoint, FunctionBreakpoint } from 'vs/workbench/parts/debug/common/debugModel';
-import viewer = require('vs/workbench/parts/debug/browser/debugViewer');
-import debugactions = require('vs/workbench/parts/debug/electron-browser/debugActions');
+import viewer = require('vs/workbench/parts/debug/electron-browser/debugViewer');
+import debugactions = require('vs/workbench/parts/debug/browser/debugActions');
 import { IContextMenuService } from 'vs/platform/contextview/browser/contextView';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { ITelemetryService } from 'vs/platform/telemetry/common/telemetry';
 import { IMessageService } from 'vs/platform/message/common/message';
-import { IKeybindingService } from 'vs/platform/keybinding/common/keybindingService';
+import { IKeybindingService } from 'vs/platform/keybinding/common/keybinding';
 
 import IDebugService = debug.IDebugService;
 
@@ -387,7 +387,7 @@ export class BreakpointsView extends viewlet.AdaptiveCollapsibleViewletView {
 	public getActions(): actions.IAction[] {
 		return [
 			this.instantiationService.createInstance(debugactions.AddFunctionBreakpointAction, debugactions.AddFunctionBreakpointAction.ID, debugactions.AddFunctionBreakpointAction.LABEL),
-			this.instantiationService.createInstance(debugactions.ToggleBreakpointsActivatedAction, debugactions.ToggleBreakpointsActivatedAction.ID, debugactions.ToggleBreakpointsActivatedAction.LABEL),
+			this.instantiationService.createInstance(debugactions.ToggleBreakpointsActivatedAction, debugactions.ToggleBreakpointsActivatedAction.ID, debugactions.ToggleBreakpointsActivatedAction.ACTIVATE_LABEL),
 			this.instantiationService.createInstance(debugactions.RemoveAllBreakpointsAction, debugactions.RemoveAllBreakpointsAction.ID, debugactions.RemoveAllBreakpointsAction.LABEL)
 		];
 	}

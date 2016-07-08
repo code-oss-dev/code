@@ -13,7 +13,8 @@ import editorbrowser = require('vs/editor/browser/editorBrowser');
 import { EditorAction } from 'vs/editor/common/editorAction';
 import { Behaviour } from 'vs/editor/common/editorActionEnablement';
 import { IEventService } from 'vs/platform/event/common/event';
-import { IKeybindingService } from 'vs/platform/keybinding/common/keybindingService';
+import { IKeybindingService } from 'vs/platform/keybinding/common/keybinding';
+import { ICommandService } from 'vs/platform/commands/common/commands';
 import { EventType, CompositeEvent } from 'vs/workbench/common/events';
 import debug = require('vs/workbench/parts/debug/common/debug');
 import model = require('vs/workbench/parts/debug/common/debugModel');
@@ -22,7 +23,6 @@ import { IPartService } from 'vs/workbench/services/part/common/partService';
 import { IPanelService } from 'vs/workbench/services/panel/common/panelService';
 import { IViewletService } from 'vs/workbench/services/viewlet/common/viewletService';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { clipboard } from 'electron';
 import IDebugService = debug.IDebugService;
 
 export class AbstractDebugAction extends actions.Action {
@@ -121,12 +121,12 @@ export class StartDebugAction extends AbstractDebugAction {
 	static ID = 'workbench.action.debug.start';
 	static LABEL = nls.localize('startDebug', "Start Debugging");
 
-	constructor(id: string, label: string, @IDebugService debugService: IDebugService, @IKeybindingService keybindingService: IKeybindingService) {
+	constructor(id: string, label: string, @IDebugService debugService: IDebugService, @IKeybindingService keybindingService: IKeybindingService, @ICommandService private commandService: ICommandService) {
 		super(id, label, 'debug-action start', debugService, keybindingService);
 	}
 
 	public run(): TPromise<any> {
-		return this.keybindingService.executeCommand('_workbench.startDebug');
+		return this.commandService.executeCommand('_workbench.startDebug');
 	}
 
 	protected isEnabled(state: debug.State): boolean {
@@ -565,28 +565,6 @@ export class SetValueAction extends AbstractDebugAction {
 	}
 }
 
-export class CopyValueAction extends AbstractDebugAction {
-	static ID = 'workbench.debug.viewlet.action.copyValue';
-	static LABEL = nls.localize('copyValue', "Copy Value");
-
-	constructor(id: string, label: string, private value: any, @IDebugService debugService: IDebugService, @IKeybindingService keybindingService: IKeybindingService) {
-		super(id, label, 'debug-action copy-value', debugService, keybindingService);
-	}
-
-	public run(): TPromise<any> {
-		if (this.value instanceof model.Variable) {
-			const frameId = this.debugService.getViewModel().getFocusedStackFrame().frameId;
-			const session = this.debugService.getActiveSession();
-			return session.evaluate({ expression: model.getFullExpressionName(this.value, session.configuration.type), frameId }).then(result => {
-				clipboard.writeText(result.body.result);
-			}, err => clipboard.writeText(this.value.value));
-		}
-
-		clipboard.writeText(this.value);
-		return TPromise.as(null);
-	}
-}
-
 export class RunToCursorAction extends EditorAction {
 	static ID = 'editor.debug.action.runToCursor';
 
@@ -604,8 +582,10 @@ export class RunToCursorAction extends EditorAction {
 		const oneTimeListener = this.debugService.getActiveSession().onDidEvent(event => {
 			if (event.event === 'stopped' || event.event === 'exit') {
 				const toRemove = this.debugService.getModel().getBreakpoints()
-					.filter(bp => bp.lineNumber === lineNumber && bp.source.uri.toString() === uri.toString()).pop();
-				this.debugService.removeBreakpoints(toRemove.getId());
+					.filter(bp => bp.desiredLineNumber === lineNumber && bp.source.uri.toString() === uri.toString()).pop();
+				if (toRemove) {
+					this.debugService.removeBreakpoints(toRemove.getId());
+				}
 				oneTimeListener.dispose();
 			}
 		});
@@ -803,16 +783,6 @@ export class ClearReplAction extends AbstractDebugAction {
 
 		// focus back to repl
 		return this.panelService.openPanel(debug.REPL_ID, true);
-	}
-}
-
-export class CopyAction extends actions.Action {
-	static ID = 'workbench.debug.action.copy';
-	static LABEL = nls.localize('copy', "Copy");
-
-	public run(): TPromise<any> {
-		clipboard.writeText(window.getSelection().toString());
-		return TPromise.as(null);
 	}
 }
 

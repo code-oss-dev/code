@@ -14,14 +14,14 @@ import {IStorageService, StorageScope} from 'vs/platform/storage/common/storage'
 import {Registry} from 'vs/platform/platform';
 import {EditorOptions} from 'vs/workbench/common/editor';
 import {IOutputEvent, IOutputChannel, IOutputService, Extensions, OUTPUT_PANEL_ID, IOutputChannelRegistry, MAX_OUTPUT_LENGTH} from 'vs/workbench/parts/output/common/output';
-import {OutputEditorInput} from 'vs/workbench/parts/output/common/outputEditorInput';
+import {OutputEditorInput} from 'vs/workbench/parts/output/browser/outputEditorInput';
 import {OutputPanel} from 'vs/workbench/parts/output/browser/outputPanel';
 import {IPanelService} from 'vs/workbench/services/panel/common/panelService';
 
 const OUTPUT_ACTIVE_CHANNEL_KEY = 'output.activechannel';
 
 export class OutputService implements IOutputService {
-	public serviceId = IOutputService;
+	public _serviceBrand: any;
 
 	private receivedOutput: { [channel: string]: string; };
 

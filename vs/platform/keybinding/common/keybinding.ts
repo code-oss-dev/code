@@ -6,9 +6,7 @@
 
 import {IHTMLContentElement} from 'vs/base/common/htmlContent';
 import {Keybinding} from 'vs/base/common/keyCodes';
-import {TypeConstraint} from 'vs/base/common/types';
-import {TPromise} from 'vs/base/common/winjs.base';
-import {ServiceIdentifier, ServicesAccessor, createDecorator} from 'vs/platform/instantiation/common/instantiation';
+import {createDecorator} from 'vs/platform/instantiation/common/instantiation';
 import Event from 'vs/base/common/event';
 
 export interface IUserFriendlyKeybinding {
@@ -48,6 +46,7 @@ export interface KbExpr {
 	evaluate(context: any): boolean;
 	normalize(): KbExpr;
 	serialize(): string;
+	keys(): string[];
 }
 
 function cmp(a:KbExpr, b:KbExpr): number {
@@ -106,6 +105,10 @@ export class KbDefinedExpression implements KbExpr {
 	public serialize(): string {
 		return this.key;
 	}
+
+	public keys(): string[]{
+		return [this.key];
+	}
 }
 
 export class KbEqualsExpression implements KbExpr {
@@ -162,6 +165,10 @@ export class KbEqualsExpression implements KbExpr {
 		}
 
 		return this.key + ' == \'' + this.value + '\'';
+	}
+
+	public keys(): string[]{
+		return [this.key];
 	}
 }
 
@@ -220,6 +227,10 @@ export class KbNotEqualsExpression implements KbExpr {
 
 		return this.key + ' != \'' + this.value + '\'';
 	}
+
+	public keys(): string[]{
+		return [this.key];
+	}
 }
 
 export class KbNotExpression implements KbExpr {
@@ -257,6 +268,10 @@ export class KbNotExpression implements KbExpr {
 
 	public serialize(): string {
 		return '!' + this.key;
+	}
+
+	public keys(): string[]{
+		return [this.key];
 	}
 }
 
@@ -344,6 +359,14 @@ export class KbAndExpression implements KbExpr {
 		}
 		return this.expr.map(e => e.serialize()).join(' && ');
 	}
+
+	public keys(): string[]{
+		const result: string[] = [];
+		for (let expr of this.expr) {
+			result.push(...expr.keys());
+		}
+		return result;
+	}
 }
 
 
@@ -411,21 +434,6 @@ export interface IKeybindingItem {
 	weight2: number;
 }
 
-export interface ICommandHandler {
-	(accessor: ServicesAccessor, ...args: any[]): void;
-	description?: string | ICommandHandlerDescription;
-}
-
-export interface ICommandHandlerDescription {
-	description: string;
-	args: { name: string; description?: string; constraint?: TypeConstraint; }[];
-	returns?: string;
-}
-
-export interface ICommandsMap {
-	[id: string]: ICommandHandler;
-}
-
 export interface IKeybindingContextKey<T> {
 	set(value: T): void;
 	reset(): void;
@@ -439,7 +447,7 @@ export interface IKeybindingScopeLocation {
 }
 
 export interface IKeybindingService {
-	serviceId: ServiceIdentifier<any>;
+	_serviceBrand: any;
 	dispose(): void;
 
 	onDidChangeContext: Event<string[]>;
@@ -457,10 +465,6 @@ export interface IKeybindingService {
 	getAriaLabelFor(keybinding: Keybinding): string;
 	getHTMLLabelFor(keybinding: Keybinding): IHTMLContentElement[];
 	getElectronAcceleratorFor(keybinding: Keybinding): string;
-
-	executeCommand<T>(commandId: string, ...args: any[]): TPromise<T>;
-	executeCommand(commandId: string, ...args: any[]): TPromise<any>;
-	hasCommand(commandId: string): boolean;
 }
 
 export const SET_CONTEXT_COMMAND_ID = 'setContext';
