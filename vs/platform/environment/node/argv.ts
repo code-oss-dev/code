@@ -122,13 +122,11 @@ export function parseArgs(args: string[]): ParsedArgs {
 	return minimist(args, options) as ParsedArgs;
 }
 
-const executable = 'code' + (os.platform() === 'win32' ? '.exe' : '');
-
 export const optionsHelp: { [name: string]: string; } = {
 	'-d, --diff': localize('diff', "Open a diff editor. Requires to pass two file paths as arguments."),
 	'--disable-extensions': localize('disableExtensions', "Disable all installed extensions."),
 	'-g, --goto': localize('goto', "Open the file at path at the line and column (add :line[:column] to path)."),
-	'--locale=<locale>': localize('locale', "The locale to use (e.g. en-US or zh-TW)."),
+	'--locale <locale>': localize('locale', "The locale to use (e.g. en-US or zh-TW)."),
 	'-n, --new-window': localize('newWindow', "Force a new instance of Code."),
 	'-p, --performance': localize('performance', "Start with the 'Developer: Startup Performance' command enabled."),
 	'-r, --reuse-window': localize('reuseWindow', "Force opening a file or folder in the last active window."),
@@ -177,13 +175,14 @@ function wrapText(text: string, columns: number) : string[] {
 	return lines;
 }
 
-export function buildHelpMessage(version: string): string {
-	let columns = (<any>process.stdout).isTTY ? (<any>process.stdout).columns : 80;
-	return `Visual Studio Code v${ version }
+export function buildHelpMessage(fullName: string, name: string, version: string): string {
+	const columns = (<any>process.stdout).isTTY ? (<any>process.stdout).columns : 80;
+	const executable = `${ name }${ os.platform() === 'win32' ? '.exe' : '' }`;
 
+	return `${ fullName } ${ version }
 
-Usage: ${ executable } [arguments] [paths...]
+${ localize('usage', "Usage") }: ${ executable } [${ localize('options', "options") }] [${ localize('paths', 'paths') }...]
 
-Options:
+${ localize('optionsUpperCase', "Options") }:
 ${formatOptions(optionsHelp, columns)}`;
 }
