@@ -27,15 +27,15 @@ import { IInstantiationService } from 'vs/platform/instantiation/common/instanti
 import { IExtensionGalleryService, IExtensionManifest, IKeyBinding } from 'vs/platform/extensionManagement/common/extensionManagement';
 import { IThemeService } from 'vs/workbench/services/themes/common/themeService';
 import { ExtensionsInput } from 'vs/workbench/parts/extensions/common/extensionsInput';
-import { IExtensionsWorkbenchService, IExtensionsViewlet, VIEWLET_ID, IExtension, IExtensionDependencies } from '../common/extensions';
-import { Renderer, DataSource, Controller } from './dependenciesViewer';
+import { IExtensionsWorkbenchService, IExtensionsViewlet, VIEWLET_ID, IExtension, IExtensionDependencies } from 'vs/workbench/parts/extensions/common/extensions';
+import { Renderer, DataSource, Controller } from 'vs/workbench/parts/extensions/browser/dependenciesViewer';
 import { IConfigurationService } from 'vs/platform/configuration/common/configuration';
-import { ITemplateData } from './extensionsList';
-import { RatingsWidget, InstallWidget } from './extensionsWidgets';
+import { ITemplateData } from 'vs/workbench/parts/extensions/browser/extensionsList';
+import { RatingsWidget, InstallWidget } from 'vs/workbench/parts/extensions/browser/extensionsWidgets';
 import { EditorOptions } from 'vs/workbench/common/editor';
 import product from 'vs/platform/product';
 import { ActionBar } from 'vs/base/browser/ui/actionbar/actionbar';
-import { CombinedInstallAction, UpdateAction, EnableAction, DisableAction, ReloadAction, BuiltinStatusLabelAction } from './extensionsActions';
+import { CombinedInstallAction, UpdateAction, EnableAction, DisableAction, BuiltinStatusLabelAction, ReloadAction } from 'vs/workbench/parts/extensions/browser/extensionsActions';
 import WebView from 'vs/workbench/parts/html/browser/webview';
 import { Keybinding } from 'vs/base/common/keybinding';
 import { IKeybindingService } from 'vs/platform/keybinding/common/keybinding';
@@ -43,6 +43,7 @@ import { DomScrollableElement } from 'vs/base/browser/ui/scrollbar/scrollableEle
 import { IMessageService } from 'vs/platform/message/common/message';
 import { IOpenerService } from 'vs/platform/opener/common/opener';
 import { Tree } from 'vs/base/parts/tree/browser/treeImpl';
+import { Position } from 'vs/platform/editor/common/editor';
 
 function renderBody(body: string): string {
 	return `<!DOCTYPE html>
@@ -60,6 +61,7 @@ class NavBar {
 	private _onChange = new Emitter<string>();
 	get onChange(): Event<string> { return this._onChange.event; }
 
+	private currentId: string = null;
 	private actions: Action[];
 	private actionbar: ActionBar;
 
@@ -70,12 +72,7 @@ class NavBar {
 	}
 
 	push(id: string, label: string): void {
-		const run = () => {
-			this._onChange.fire(id);
-			this.actions.forEach(a => a.enabled = a.id !== action.id);
-			return TPromise.as(null);
-		};
-
+		const run = () => this._update(id);
 		const action = new Action(id, label, null, true, run);
 
 		this.actions.push(action);
@@ -89,6 +86,17 @@ class NavBar {
 	clear(): void {
 		this.actions = dispose(this.actions);
 		this.actionbar.clear();
+	}
+
+	update(): void {
+		this._update(this.currentId);
+	}
+
+	_update(id: string = this.currentId): TPromise<void> {
+		this.currentId = id;
+		this._onChange.fire(id);
+		this.actions.forEach(a => a.enabled = a.id !== id);
+		return TPromise.as(null);
 	}
 
 	dispose(): void {
@@ -273,7 +281,7 @@ export class ExtensionEditor extends BaseEditor {
 		reloadAction.extension = extension;
 
 		this.extensionActionBar.clear();
-		this.extensionActionBar.push([enableAction, updateAction, reloadAction, disableAction, installAction, builtinStatusAction], { icon: true, label: true });
+		this.extensionActionBar.push([reloadAction, updateAction, enableAction, disableAction, installAction, builtinStatusAction], { icon: true, label: true });
 		this.transientDisposables.push(enableAction, updateAction, reloadAction, disableAction, installAction, builtinStatusAction);
 
 		this.navbar.clear();
@@ -286,6 +294,11 @@ export class ExtensionEditor extends BaseEditor {
 		this.content.innerHTML = '';
 
 		return super.setInput(input, options);
+	}
+
+	changePosition(position: Position): void {
+		this.navbar.update();
+		super.changePosition(position);
 	}
 
 	private onNavbarChange(extension: IExtension, id: string): void {
