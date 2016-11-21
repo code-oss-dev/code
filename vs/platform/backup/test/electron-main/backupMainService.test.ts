@@ -15,12 +15,13 @@ import extfs = require('vs/base/node/extfs');
 import pfs = require('vs/base/node/pfs');
 import Uri from 'vs/base/common/uri';
 import { TestEnvironmentService } from 'vs/test/utils/servicesTestUtils';
-import { BackupMainService } from 'vs/platform/backup/node/backupMainService';
+import { TestLifecycleService } from 'vs/code/test/electron-main/servicesTestUtils';
+import { BackupMainService } from 'vs/platform/backup/electron-main/backupMainService';
 import { IBackupWorkspacesFormat } from 'vs/platform/backup/common/backup';
 
 class TestBackupMainService extends BackupMainService {
 	constructor(backupHome: string, backupWorkspacesPath: string) {
-		super(TestEnvironmentService);
+		super(TestEnvironmentService, new TestLifecycleService());
 
 		this.backupHome = backupHome;
 		this.workspacesJsonPath = backupWorkspacesPath;
@@ -95,21 +96,6 @@ suite('BackupMainService', () => {
 		assert.deepEqual(service.getWorkspaceBackupPaths(), [fooFile.fsPath, barFile.fsPath]);
 	});
 
-	test('getWorkspaceUntitledFileBackupsSync should return untitled file backup resources', done => {
-		const untitledBackupDir = path.join(fooWorkspaceBackupDir, 'untitled');
-		const untitledBackup1 = path.join(untitledBackupDir, 'bar');
-		const untitledBackup2 = path.join(untitledBackupDir, 'foo');
-		pfs.mkdirp(untitledBackupDir).then(() => {
-			pfs.writeFile(untitledBackup1, 'test').then(() => {
-				assert.deepEqual(service.getWorkspaceUntitledFileBackupsSync(fooFile), [untitledBackup1]);
-				pfs.writeFile(untitledBackup2, 'test').then(() => {
-					assert.deepEqual(service.getWorkspaceUntitledFileBackupsSync(fooFile), [untitledBackup1, untitledBackup2]);
-					done();
-				});
-			});
-		});
-	});
-
 	test('removeWorkspaceBackupPath should remove workspaces from workspaces.json', done => {
 		service.pushWorkspaceBackupPathsSync([fooFile, barFile]);
 		service.removeWorkspaceBackupPathSync(fooFile);
@@ -127,7 +113,7 @@ suite('BackupMainService', () => {
 
 	test('removeWorkspaceBackupPath should fail gracefully when removing a path that doesn\'t exist', done => {
 		const workspacesJson: IBackupWorkspacesFormat = { folderWorkspaces: [fooFile.fsPath] };
-		pfs.writeFileAndFlush(backupWorkspacesPath, JSON.stringify(workspacesJson)).then(() => {
+		pfs.writeFile(backupWorkspacesPath, JSON.stringify(workspacesJson)).then(() => {
 			service.removeWorkspaceBackupPathSync(barFile);
 			pfs.readFile(backupWorkspacesPath, 'utf-8').then(content => {
 				const json = <IBackupWorkspacesFormat>JSON.parse(content);

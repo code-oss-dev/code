@@ -7,9 +7,10 @@ import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
 import Uri from 'vs/base/common/uri';
-import { readdirSync } from 'vs/base/node/extfs';
 import { IBackupWorkspacesFormat, IBackupMainService } from 'vs/platform/backup/common/backup';
 import { IEnvironmentService } from 'vs/platform/environment/common/environment';
+import { ILifecycleMainService } from 'vs/platform/lifecycle/common/mainLifecycle';
+import { VSCodeWindow } from 'vs/code/electron-main/window';
 
 export class BackupMainService implements IBackupMainService {
 
@@ -21,11 +22,25 @@ export class BackupMainService implements IBackupMainService {
 	private workspacesJsonContent: IBackupWorkspacesFormat;
 
 	constructor(
-		@IEnvironmentService environmentService: IEnvironmentService
+		@IEnvironmentService environmentService: IEnvironmentService,
+		@ILifecycleMainService lifecycleService: ILifecycleMainService
 	) {
 		this.backupHome = environmentService.backupHome;
 		this.workspacesJsonPath = environmentService.backupWorkspacesPath;
+
+		lifecycleService.onBeforeUnload(this.onBeforeUnloadWindow.bind(this));
+
 		this.loadSync();
+	}
+
+	private onBeforeUnloadWindow(vscodeWindow: VSCodeWindow) {
+		if (vscodeWindow.openedWorkspacePath) {
+			// Clear out workspace from workspaces.json if it doesn't have any backups
+			const workspaceResource = Uri.file(vscodeWindow.openedWorkspacePath);
+			if (!this.hasWorkspaceBackup(workspaceResource)) {
+				this.removeWorkspaceBackupPathSync(workspaceResource);
+			}
+		}
 	}
 
 	public getWorkspaceBackupPaths(): string[] {
@@ -56,17 +71,6 @@ export class BackupMainService implements IBackupMainService {
 		}
 		this.workspacesJsonContent.folderWorkspaces.splice(index, 1);
 		this.saveSync();
-	}
-
-	public getWorkspaceUntitledFileBackupsSync(workspace: Uri): string[] {
-		const untitledDir = path.join(this.getWorkspaceBackupDirectory(workspace), 'untitled');
-
-		// Allow sync here as it's only used in workbench initialization's critical path
-		try {
-			return readdirSync(untitledDir).map(file => path.join(untitledDir, file));
-		} catch (ex) {
-			return [];
-		}
 	}
 
 	public hasWorkspaceBackup(workspace: Uri): boolean {

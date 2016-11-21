@@ -6,14 +6,16 @@
 'use strict';
 
 import Uri from 'vs/base/common/uri';
-import { IBackupService, IBackupModelService, IBackupFileService } from 'vs/workbench/services/backup/common/backup';
+import { IBackupService, IBackupFileService } from 'vs/workbench/services/backup/common/backup';
 import { IDisposable, dispose } from 'vs/base/common/lifecycle';
-import { ITextFileService, TextFileModelChangeEvent } from 'vs/workbench/services/textfile/common/textfiles';
+import { ITextFileService, TextFileModelChangeEvent, StateChange } from 'vs/workbench/services/textfile/common/textfiles';
 import { IFileService } from 'vs/platform/files/common/files';
 import { IWorkspaceContextService } from 'vs/platform/workspace/common/workspace';
 import { IUntitledEditorService } from 'vs/workbench/services/untitled/common/untitledEditorService';
+import { IEnvironmentService } from 'vs/platform/environment/common/environment';
+import { IWorkbenchContribution } from 'vs/workbench/common/contributions';
 
-export class BackupModelService implements IBackupModelService {
+export class BackupModelTracker implements IWorkbenchContribution {
 
 	public _serviceBrand: any;
 
@@ -25,7 +27,8 @@ export class BackupModelService implements IBackupModelService {
 		@IFileService private fileService: IFileService,
 		@ITextFileService private textFileService: ITextFileService,
 		@IUntitledEditorService private untitledEditorService: IUntitledEditorService,
-		@IWorkspaceContextService private contextService: IWorkspaceContextService
+		@IWorkspaceContextService private contextService: IWorkspaceContextService,
+		@IEnvironmentService private environmentService: IEnvironmentService
 	) {
 		this.toDispose = [];
 
@@ -33,10 +36,13 @@ export class BackupModelService implements IBackupModelService {
 	}
 
 	private registerListeners() {
+		if (this.environmentService.isExtensionDevelopment) {
+			return;
+		}
+
 		// Listen for text file model changes
 		this.toDispose.push(this.textFileService.models.onModelContentChanged((e) => this.onTextFileModelChanged(e)));
 		this.toDispose.push(this.textFileService.models.onModelSaved((e) => this.discardBackup(e.resource)));
-		this.toDispose.push(this.textFileService.models.onModelReverted((e) => this.discardBackup(e.resource)));
 		this.toDispose.push(this.textFileService.models.onModelDisposed((e) => this.discardBackup(e)));
 
 		// Listen for untitled model changes
@@ -45,9 +51,13 @@ export class BackupModelService implements IBackupModelService {
 	}
 
 	private onTextFileModelChanged(event: TextFileModelChangeEvent): void {
-		if (this.backupService.isHotExitEnabled) {
-			const model = this.textFileService.models.get(event.resource);
-			this.backupService.doBackup(model.getResource(), model.getValue());
+		if (event.kind === StateChange.REVERTED) {
+			this.discardBackup(event.resource);
+		} else if (event.kind === StateChange.CONTENT_CHANGE) {
+			if (this.backupService.isHotExitEnabled) {
+				const model = this.textFileService.models.get(event.resource);
+				this.backupFileService.backupResource(model.getResource(), model.getValue());
+			}
 		}
 	}
 
@@ -55,7 +65,7 @@ export class BackupModelService implements IBackupModelService {
 		if (this.backupService.isHotExitEnabled) {
 			const input = this.untitledEditorService.get(resource);
 			if (input.isDirty()) {
-				this.backupService.doBackup(resource, input.getValue());
+				this.backupFileService.backupResource(resource, input.getValue());
 			} else {
 				this.backupFileService.discardResourceBackup(resource);
 			}
@@ -68,5 +78,9 @@ export class BackupModelService implements IBackupModelService {
 
 	public dispose(): void {
 		this.toDispose = dispose(this.toDispose);
+	}
+
+	public getId(): string {
+		return 'vs.backup.backupModelTracker';
 	}
 }
