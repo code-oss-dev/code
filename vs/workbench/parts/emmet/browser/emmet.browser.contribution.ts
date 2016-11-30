@@ -3,16 +3,6 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-.monaco-editor .view-line :not(.inline-folded).copySetting:after {
-	cursor: pointer;
-	content:"⍈";
-	margin-left: 1em;
-	display:inline-block;
-	position: absolute;
-	height:16px;
-	width:16px;
-}
+'use strict';
 
-.monaco-editor .view-line :not(.inline-folded).copySetting.select:after {
-	content:"...";
-}
+import './actions/showEmmetCommands';
