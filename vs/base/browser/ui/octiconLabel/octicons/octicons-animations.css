@@ -3,18 +3,12 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-.monaco-editor .findOptionsWidget {
-	background-color: #EFEFF2;
-	box-shadow: 0 2px 8px #A8A8A8;
+@keyframes octicon-spin {
+	100% {
+		transform:rotate(360deg);
+	}
 }
 
-.monaco-editor.vs-dark .findOptionsWidget {
-	background-color: #2D2D30;
-	box-shadow: 0 2px 8px #000;
-}
-
-.monaco-editor.hc-black .findOptionsWidget {
-	border: 2px solid #6FC3DF;
-	background: #0C141F;
-	box-shadow: none;
+.octicon-animation-spin {
+	animation: octicon-spin 2s linear infinite;
 }
