@@ -7,7 +7,7 @@
 import { TPromise } from 'vs/base/common/winjs.base';
 import Event, { Emitter } from 'vs/base/common/event';
 import { IThreadService } from 'vs/workbench/services/thread/common/threadService';
-import { ExtHostContext, MainThreadExplorerViewShape, ExtHostExplorerViewShape, ITreeNode } from './extHost.protocol';
+import { ExtHostContext, MainThreadExplorerViewShape, ExtHostExplorerViewShape, ITreeNode } from '../node/extHost.protocol';
 import { IMessageService, Severity } from 'vs/platform/message/common/message';
 import { ICommandService } from 'vs/platform/commands/common/commands';
 import { IExplorerViewsService, IExplorerViewDataProvider, IExplorerView } from 'vs/workbench/parts/explorers/common/explorer';
@@ -73,9 +73,11 @@ class TreeExplorerNodeProvider implements IExplorerViewDataProvider<ITreeNode> {
 		return node.contextKey;
 	}
 
-	executeCommand(node: ITreeNode): TPromise<any> {
-		return this._proxy.$getInternalCommand(this.id, node).then(command => {
-			return this.commandService.executeCommand(command.id, ...command.arguments);
+	select(node: ITreeNode): void {
+		this._proxy.$getInternalCommand(this.id, node).then(command => {
+			if (command) {
+				this.commandService.executeCommand(command.id, ...command.arguments);
+			}
 		});
 	}
 }
