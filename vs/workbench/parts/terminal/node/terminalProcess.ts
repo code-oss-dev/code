@@ -3,21 +3,19 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-var fs = require('fs');
-var os = require('os');
-var path = require('path');
-var ptyJs = require('node-pty');
+import * as os from 'os';
+import * as path from 'path';
+import * as pty from 'node-pty';
 
 // The pty process needs to be run in its own child process to get around maxing out CPU on Mac,
 // see https://github.com/electron/electron/issues/38
-
-var name;
+var shellName: string;
 if (os.platform() === 'win32') {
-	name = path.basename(process.env.PTYSHELL);
+	shellName = path.basename(process.env.PTYSHELL);
 } else {
 	// Using 'xterm-256color' here helps ensure that the majority of Linux distributions will use a
 	// color prompt as defined in the default ~/.bashrc file.
-	name = 'xterm-256color';
+	shellName = 'xterm-256color';
 }
 var shell = process.env.PTYSHELL;
 var args = getArgs();
@@ -29,16 +27,24 @@ var currentTitle = '';
 setupPlanB(process.env.PTYPID);
 cleanEnv();
 
-var options = {
-	name: name,
-	cwd: cwd
+interface IOptions {
+	name: string;
+	cwd: string;
+	cols?: number;
+	rows?: number;
+}
+
+var options: IOptions = {
+	name: shellName,
+	cwd
 };
 if (cols && rows) {
 	options.cols = parseInt(cols, 10);
 	options.rows = parseInt(rows, 10);
 }
 
-var ptyProcess = ptyJs.fork(shell, args, options);
+var ptyProcess = pty.fork(shell, args, options);
+
 var closeTimeout;
 var exitCode;
 
@@ -93,6 +99,7 @@ function getArgs() {
 
 function cleanEnv() {
 	var keys = [
+		'AMD_ENTRYPOINT',
 		'ELECTRON_RUN_AS_NODE',
 		'PTYCWD',
 		'PTYPID',
