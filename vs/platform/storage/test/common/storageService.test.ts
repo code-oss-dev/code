@@ -8,9 +8,9 @@
 import * as assert from 'assert';
 import { TestInstantiationService } from 'vs/platform/instantiation/test/common/instantiationServiceMock';
 import { StorageScope } from 'vs/platform/storage/common/storage';
-import { IWorkspaceContextService } from 'vs/platform/workspace/common/workspace';
+import { IWorkspaceContextService, IWorkspace } from 'vs/platform/workspace/common/workspace';
 import { StorageService, InMemoryLocalStorage } from 'vs/platform/storage/common/storageService';
-import { TestContextService } from 'vs/workbench/test/workbenchTestServices';
+import { TestWorkspace } from 'vs/platform/workspace/test/common/testWorkspace';
 
 suite('Workbench StorageSevice', () => {
 	let contextService: IWorkspaceContextService;
@@ -18,11 +18,18 @@ suite('Workbench StorageSevice', () => {
 
 	setup(() => {
 		instantiationService = new TestInstantiationService();
-		contextService = instantiationService.stub(IWorkspaceContextService, new TestContextService());
+		contextService = instantiationService.stub(IWorkspaceContextService, <IWorkspaceContextService>{
+			hasWorkspace: () => {
+				return true;
+			},
+			getWorkspace: () => {
+				return <IWorkspace>TestWorkspace;
+			}
+		});
 	});
 
 	test('Swap Data with undefined default value', () => {
-		let s = new StorageService(new InMemoryLocalStorage(), null, contextService.getWorkspace2());
+		let s = new StorageService(new InMemoryLocalStorage(), null, contextService.getWorkspace());
 
 		s.swap('Monaco.IDE.Core.Storage.Test.swap', 'foobar', 'barfoo');
 		assert.strictEqual('foobar', s.get('Monaco.IDE.Core.Storage.Test.swap'));
@@ -33,7 +40,7 @@ suite('Workbench StorageSevice', () => {
 	});
 
 	test('Remove Data', () => {
-		let s = new StorageService(new InMemoryLocalStorage(), null, contextService.getWorkspace2());
+		let s = new StorageService(new InMemoryLocalStorage(), null, contextService.getWorkspace());
 		s.store('Monaco.IDE.Core.Storage.Test.remove', 'foobar');
 		assert.strictEqual('foobar', s.get('Monaco.IDE.Core.Storage.Test.remove'));
 
@@ -42,7 +49,7 @@ suite('Workbench StorageSevice', () => {
 	});
 
 	test('Get Data, Integer, Boolean', () => {
-		let s = new StorageService(new InMemoryLocalStorage(), null, contextService.getWorkspace2());
+		let s = new StorageService(new InMemoryLocalStorage(), null, contextService.getWorkspace());
 
 		assert.strictEqual(s.get('Monaco.IDE.Core.Storage.Test.get', StorageScope.GLOBAL, 'foobar'), 'foobar');
 		assert.strictEqual(s.get('Monaco.IDE.Core.Storage.Test.get', StorageScope.GLOBAL, ''), '');
@@ -77,14 +84,14 @@ suite('Workbench StorageSevice', () => {
 	test('StorageSevice cleans up when workspace changes', () => {
 		let storageImpl = new InMemoryLocalStorage();
 		let time = new Date().getTime();
-		let s = new StorageService(storageImpl, null, contextService.getWorkspace2(), time);
+		let s = new StorageService(storageImpl, null, contextService.getWorkspace(), time);
 
 		s.store('key1', 'foobar');
 		s.store('key2', 'something');
 		s.store('wkey1', 'foo', StorageScope.WORKSPACE);
 		s.store('wkey2', 'foo2', StorageScope.WORKSPACE);
 
-		s = new StorageService(storageImpl, null, contextService.getWorkspace2(), time);
+		s = new StorageService(storageImpl, null, contextService.getWorkspace(), time);
 
 		assert.strictEqual(s.get('key1', StorageScope.GLOBAL), 'foobar');
 		assert.strictEqual(s.get('key1', StorageScope.WORKSPACE, null), null);
@@ -93,7 +100,7 @@ suite('Workbench StorageSevice', () => {
 		assert.strictEqual(s.get('wkey1', StorageScope.WORKSPACE), 'foo');
 		assert.strictEqual(s.get('wkey2', StorageScope.WORKSPACE), 'foo2');
 
-		s = new StorageService(storageImpl, null, contextService.getWorkspace2(), time + 100);
+		s = new StorageService(storageImpl, null, contextService.getWorkspace(), time + 100);
 
 		assert.strictEqual(s.get('key1', StorageScope.GLOBAL), 'foobar');
 		assert.strictEqual(s.get('key1', StorageScope.WORKSPACE, null), null);
