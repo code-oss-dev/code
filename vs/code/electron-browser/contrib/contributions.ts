@@ -2,22 +2,12 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
+'use strict';
 
-.monaco-split-view2 {
-	position: relative;
-	overflow: hidden;
-	width: 100%;
-	height: 100%;
-}
 
-.monaco-split-view2 > .split-view-view {
-	overflow: hidden;
-}
+import { NodeCachedDataCleaner } from 'vs/code/electron-browser/contrib/nodeCachedDataCleaner';
+import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 
-.monaco-split-view2.vertical > .split-view-view {
-	width: 100%;
-}
-
-.monaco-split-view2.horizontal > .split-view-view {
-	height: 100%;
+export function createSharedProcessContributions(service: IInstantiationService): void {
+	service.createInstance(NodeCachedDataCleaner);
 }
