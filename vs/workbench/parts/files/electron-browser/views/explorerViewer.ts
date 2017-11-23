@@ -28,7 +28,7 @@ import { IFilesConfiguration, SortOrder } from 'vs/workbench/parts/files/common/
 import { ITextFileService } from 'vs/workbench/services/textfile/common/textfiles';
 import { FileOperationError, FileOperationResult, IFileService, FileKind } from 'vs/platform/files/common/files';
 import { ResourceMap } from 'vs/base/common/map';
-import { DuplicateFileAction, ImportFileAction, IEditableData, IFileViewletState } from 'vs/workbench/parts/files/browser/fileActions';
+import { DuplicateFileAction, ImportFileAction, IEditableData, IFileViewletState } from 'vs/workbench/parts/files/electron-browser/fileActions';
 import { IDataSource, ITree, IAccessibilityProvider, IRenderer, ContextMenuEvent, ISorter, IFilter, IDragAndDropData, IDragOverReaction, DRAG_OVER_ACCEPT_BUBBLE_DOWN, DRAG_OVER_ACCEPT_BUBBLE_DOWN_COPY, DRAG_OVER_ACCEPT_BUBBLE_UP, DRAG_OVER_ACCEPT_BUBBLE_UP_COPY, DRAG_OVER_REJECT } from 'vs/base/parts/tree/browser/tree';
 import { DesktopDragAndDropData, ExternalElementsDragAndDropData, SimpleFileResourceDragAndDrop } from 'vs/base/parts/tree/browser/treeDnd';
 import { ClickBehavior, DefaultController } from 'vs/base/parts/tree/browser/treeDefaults';
@@ -55,6 +55,7 @@ import { IWindowService } from 'vs/platform/windows/common/windows';
 import { IWorkspaceEditingService } from 'vs/workbench/services/workspace/common/workspaceEditing';
 import { getPathLabel } from 'vs/base/common/labels';
 import { extractResources } from 'vs/workbench/browser/editor';
+import { relative } from 'path';
 
 export class FileDataSource implements IDataSource {
 	constructor(
@@ -271,8 +272,8 @@ export interface IFileTemplateData {
 // Explorer Renderer
 export class FileRenderer implements IRenderer {
 
-	private static ITEM_HEIGHT = 22;
-	private static FILE_TEMPLATE_ID = 'file';
+	private static readonly ITEM_HEIGHT = 22;
+	private static readonly FILE_TEMPLATE_ID = 'file';
 
 	private state: FileViewletState;
 	private config: IFilesConfiguration;
@@ -669,7 +670,7 @@ export class FileSorter implements ISorter {
 // Explorer Filter
 export class FileFilter implements IFilter {
 
-	private static MAX_SIBLINGS_FILTER_THRESHOLD = 2000;
+	private static readonly MAX_SIBLINGS_FILTER_THRESHOLD = 2000;
 
 	private hiddenExpressionPerRoot: Map<string, glob.IExpression>;
 	private workspaceFolderChangeListener: IDisposable;
@@ -717,7 +718,7 @@ export class FileFilter implements IFilter {
 		// Hide those that match Hidden Patterns
 		const siblingsFn = () => siblings && siblings.map(c => c.name);
 		const expression = this.hiddenExpressionPerRoot.get(stat.root.resource.toString()) || Object.create(null);
-		if (glob.match(expression, paths.normalize(paths.relative(stat.root.resource.fsPath, stat.resource.fsPath), true), siblingsFn)) {
+		if (glob.match(expression, paths.normalize(relative(stat.root.resource.fsPath, stat.resource.fsPath), true), siblingsFn)) {
 			return false; // hidden through pattern
 		}
 
@@ -732,7 +733,7 @@ export class FileFilter implements IFilter {
 // Explorer Drag And Drop Controller
 export class FileDragAndDrop extends SimpleFileResourceDragAndDrop {
 
-	private static CONFIRM_DND_SETTING_KEY = 'explorer.confirmDragAndDrop';
+	private static readonly CONFIRM_DND_SETTING_KEY = 'explorer.confirmDragAndDrop';
 
 	private toDispose: IDisposable[];
 	private dropEnabled: boolean;

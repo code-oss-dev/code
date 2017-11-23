@@ -28,7 +28,7 @@ import { explorerItemToFileResource, IFilesConfiguration } from 'vs/workbench/pa
 import { ITextFileService, AutoSaveMode } from 'vs/workbench/services/textfile/common/textfiles';
 import { IWorkbenchEditorService } from 'vs/workbench/services/editor/common/editorService';
 import { EditorStacksModel, EditorGroup } from 'vs/workbench/common/editor/editorStacksModel';
-import { SaveFileAction, RevertFileAction, SaveFileAsAction, OpenToSideAction, SelectResourceForCompareAction, CompareResourcesAction, SaveAllInGroupAction, CompareWithSavedAction } from 'vs/workbench/parts/files/browser/fileActions';
+import { SaveFileAction, RevertFileAction, SaveFileAsAction, OpenToSideAction, SelectResourceForCompareAction, CompareResourcesAction, SaveAllInGroupAction, CompareWithSavedAction } from 'vs/workbench/parts/files/electron-browser/fileActions';
 import { IUntitledEditorService } from 'vs/workbench/services/untitled/common/untitledEditorService';
 import { CloseOtherEditorsInGroupAction, CloseEditorAction, CloseEditorsInGroupAction, CloseUnmodifiedEditorsInGroupAction } from 'vs/workbench/browser/parts/editor/editorActions';
 import { IConfigurationService } from 'vs/platform/configuration/common/configuration';
@@ -80,9 +80,9 @@ interface IEditorGroupTemplateData {
 
 export class Renderer implements IRenderer {
 
-	public static ITEM_HEIGHT = 22;
-	private static EDITOR_GROUP_TEMPLATE_ID = 'editorgroup';
-	private static OPEN_EDITOR_TEMPLATE_ID = 'openeditor';
+	public static readonly ITEM_HEIGHT = 22;
+	private static readonly EDITOR_GROUP_TEMPLATE_ID = 'editorgroup';
+	private static readonly OPEN_EDITOR_TEMPLATE_ID = 'openeditor';
 
 	constructor(
 		private actionProvider: ActionProvider,

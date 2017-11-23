@@ -17,13 +17,13 @@ import { IEditorGroupService } from 'vs/workbench/services/group/common/groupSer
 import { IConfigurationService, IConfigurationChangeEvent } from 'vs/platform/configuration/common/configuration';
 import { IKeybindingService } from 'vs/platform/keybinding/common/keybinding';
 import { IEditorStacksModel, IStacksModelChangeEvent, IEditorGroup } from 'vs/workbench/common/editor';
-import { SaveAllAction } from 'vs/workbench/parts/files/browser/fileActions';
+import { SaveAllAction } from 'vs/workbench/parts/files/electron-browser/fileActions';
 import { ViewsViewletPanel, IViewletViewOptions, IViewOptions } from 'vs/workbench/browser/parts/views/viewsViewlet';
 import { VIEWLET_ID, OpenEditorsFocusedContext, ExplorerFocusedContext } from 'vs/workbench/parts/files/common/files';
 import { ITextFileService, AutoSaveMode } from 'vs/workbench/services/textfile/common/textfiles';
 import { IViewletService } from 'vs/workbench/services/viewlet/browser/viewlet';
 import { OpenEditor } from 'vs/workbench/parts/files/common/explorerModel';
-import { Renderer, DataSource, Controller, AccessibilityProvider, ActionProvider, DragAndDrop } from 'vs/workbench/parts/files/browser/views/openEditorsViewer';
+import { Renderer, DataSource, Controller, AccessibilityProvider, ActionProvider, DragAndDrop } from 'vs/workbench/parts/files/electron-browser/views/openEditorsViewer';
 import { IUntitledEditorService } from 'vs/workbench/services/untitled/common/untitledEditorService';
 import { CloseAllEditorsAction } from 'vs/workbench/browser/parts/editor/editorActions';
 import { ToggleEditorLayoutAction } from 'vs/workbench/browser/actions/toggleEditorLayout';
@@ -38,8 +38,8 @@ const $ = dom.$;
 
 export class OpenEditorsView extends ViewsViewletPanel {
 
-	private static DEFAULT_VISIBLE_OPEN_EDITORS = 9;
-	private static DEFAULT_DYNAMIC_HEIGHT = true;
+	private static readonly DEFAULT_VISIBLE_OPEN_EDITORS = 9;
+	private static readonly DEFAULT_DYNAMIC_HEIGHT = true;
 	static ID = 'workbench.explorer.openEditorsView';
 	static NAME = nls.localize({ key: 'openEditors', comment: ['Open is an adjective'] }, "Open Editors");
 
@@ -145,14 +145,14 @@ export class OpenEditorsView extends ViewsViewletPanel {
 		this.disposables.push(this.listService.register(this.tree, [this.explorerFocusedContext, this.openEditorsFocusedContext]));
 
 		// Open when selecting via keyboard
-		this.disposables.push(this.tree.addListener('selection', event => {
+		this.disposables.push(this.tree.onDidChangeSelection(event => {
 			if (event && event.payload && event.payload.origin === 'keyboard') {
 				controller.openEditor(this.tree.getFocus(), { pinned: false, sideBySide: false, preserveFocus: false });
 			}
 		}));
 
 		// Prevent collapsing of editor groups
-		this.disposables.push(this.tree.addListener('item:collapsed', (event: IItemCollapseEvent) => {
+		this.disposables.push(this.tree.onDidCollapseItem((event: IItemCollapseEvent) => {
 			if (event.item && event.item.getElement() instanceof EditorGroup) {
 				setTimeout(() => this.tree.expand(event.item.getElement())); // unwind from callback
 			}
