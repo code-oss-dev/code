@@ -3,6 +3,4 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-.toggle-word-wrap-action {
-	background: url('WordWrap_16x.svg') center center no-repeat;
-}
+require('../../../../../../bootstrap-amd').bootstrap('vs/editor/test/common/model/benchmark/entry');
