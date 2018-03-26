@@ -64,7 +64,7 @@ export class BreakpointWidget extends ZoneWidget {
 	private get placeholder(): string {
 		switch (this.context) {
 			case Context.LOG_MESSAGE:
-				return nls.localize('breakpointWidgetLogMessagePlaceholder', "Message to log when breakpoint is hit. 'Enter' to accept, 'esc' to cancel.");
+				return nls.localize('breakpointWidgetLogMessagePlaceholder', "Message to log when breakpoint is hit. Expressions within {} are interpolated. 'Enter' to accept, 'esc' to cancel.");
 			case Context.HIT_COUNT:
 				return nls.localize('breakpointWidgetHitCountPlaceholder', "Break when hit count condition is met. 'Enter' to accept, 'esc' to cancel.");
 			default:
@@ -83,7 +83,7 @@ export class BreakpointWidget extends ZoneWidget {
 		}
 	}
 
-	private getInputBoxValue(breakpoint: IBreakpoint): string {
+	private getInputValue(breakpoint: IBreakpoint): string {
 		switch (this.context) {
 			case Context.LOG_MESSAGE:
 				return breakpoint && breakpoint.logMessage ? breakpoint.logMessage : this.logMessageInput;
@@ -118,7 +118,7 @@ export class BreakpointWidget extends ZoneWidget {
 
 			this.inputBox.setAriaLabel(this.ariaLabel);
 			this.inputBox.setPlaceHolder(this.placeholder);
-			this.inputBox.value = this.getInputBoxValue(this.breakpoint);
+			this.inputBox.value = this.getInputValue(this.breakpoint);
 		});
 
 		const inputBoxContainer = dom.append(container, $('.inputBoxContainer'));
@@ -130,7 +130,7 @@ export class BreakpointWidget extends ZoneWidget {
 		this.toDispose.push(this.inputBox);
 
 		dom.addClass(this.inputBox.inputElement, isWindows ? 'windows' : isMacintosh ? 'mac' : 'linux');
-		this.inputBox.value = this.getInputBoxValue(this.breakpoint);
+		this.inputBox.value = this.getInputValue(this.breakpoint);
 		// Due to an electron bug we have to do the timeout, otherwise we do not get focus
 		setTimeout(() => this.inputBox.focus(), 0);
 
