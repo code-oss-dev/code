@@ -20,7 +20,7 @@ import { SnippetController2 } from 'vs/editor/contrib/snippet/snippetController2
 import { TabCompletionController } from 'vs/workbench/parts/snippets/electron-browser/tabCompletion';
 import { IThemeService } from 'vs/platform/theme/common/themeService';
 
-export class ReplInputEditor extends CodeEditorWidget {
+export class SimpleDebugEditor extends CodeEditorWidget {
 	constructor(
 		domElement: HTMLElement,
 		options: IEditorOptions,
@@ -30,7 +30,7 @@ export class ReplInputEditor extends CodeEditorWidget {
 		@IContextKeyService contextKeyService: IContextKeyService,
 		@IThemeService themeService: IThemeService
 	) {
-		super(domElement, options, instantiationService, codeEditorService, commandService, contextKeyService, themeService);
+		super(domElement, options, true, instantiationService, codeEditorService, commandService, contextKeyService, themeService);
 	}
 
 	protected _getContributions(): IEditorContributionCtor[] {
@@ -46,5 +46,30 @@ export class ReplInputEditor extends CodeEditorWidget {
 
 	protected _getActions(): EditorAction[] {
 		return EditorExtensionsRegistry.getEditorActions();
+	}
+
+	public static getEditorOptions(): IEditorOptions {
+		return {
+			wordWrap: 'on',
+			overviewRulerLanes: 0,
+			glyphMargin: false,
+			lineNumbers: 'off',
+			folding: false,
+			selectOnLineNumbers: false,
+			hideCursorInOverviewRuler: true,
+			selectionHighlight: false,
+			scrollbar: {
+				horizontal: 'hidden'
+			},
+			lineDecorationsWidth: 0,
+			overviewRulerBorder: false,
+			scrollBeyondLastLine: false,
+			renderLineHighlight: 'none',
+			fixedOverflowWidgets: true,
+			acceptSuggestionOnEnter: 'smart',
+			minimap: {
+				enabled: false
+			}
+		};
 	}
 }
