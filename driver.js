@@ -3,11 +3,8 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-'use strict';
+const { bootstrap } = require('./bootstrap-amd');
 
-import { TPromise } from 'vs/base/common/winjs.base';
-import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
-
-export function foo() {
-	return 1;
-}
+bootstrap('vs/code/node/driver', ({ connect }) => {
+	console.log(connect);
+});
