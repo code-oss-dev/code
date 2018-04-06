@@ -25,7 +25,7 @@ export interface WebviewOptions {
 	readonly localResourceRoots?: URI[];
 }
 
-export class Webview {
+export class WebviewElement {
 	private readonly _webview: Electron.WebviewTag;
 	private _ready: Promise<this>;
 	private _disposables: IDisposable[] = [];
@@ -182,6 +182,10 @@ export class Webview {
 	public mountTo(parent: HTMLElement) {
 		parent.appendChild(this._webviewFindWidget.getDomNode());
 		parent.appendChild(this._webview);
+	}
+
+	public getDomNode() {
+		return this._webview;
 	}
 
 	public notifyFindWidgetFocusChanged(isFocused: boolean) {

@@ -15,7 +15,7 @@ import { visit, JSONVisitor } from 'vs/base/common/json';
 import { ITextModel, IIdentifiedSingleEditOperation } from 'vs/editor/common/model';
 import { EditorModel } from 'vs/workbench/common/editor';
 import { IConfigurationNode, IConfigurationRegistry, Extensions, OVERRIDE_PROPERTY_PATTERN, IConfigurationPropertySchema, ConfigurationScope } from 'vs/platform/configuration/common/configurationRegistry';
-import { ISettingsEditorModel, IKeybindingsEditorModel, ISettingsGroup, ISetting, IFilterResult, IGroupFilter, ISettingMatcher, ISettingMatch, ISearchResultGroup, IFilterMetadata } from 'vs/workbench/parts/preferences/common/preferences';
+import { ISettingsEditorModel, IKeybindingsEditorModel, ISettingsGroup, ISetting, IFilterResult, IGroupFilter, ISettingMatcher, ISettingMatch, ISearchResultGroup, IFilterMetadata } from 'vs/workbench/services/preferences/common/preferences';
 import { IKeybindingService } from 'vs/platform/keybinding/common/keybinding';
 import { ITextEditorModel } from 'vs/editor/common/services/resolverService';
 import { IRange, Range } from 'vs/editor/common/core/range';
@@ -403,7 +403,7 @@ export class DefaultSettings extends Disposable {
 
 	constructor(
 		private _mostCommonlyUsedSettingsKeys: string[],
-		readonly configurationScope: ConfigurationScope,
+		readonly target: ConfigurationTarget,
 	) {
 		super();
 	}
@@ -555,10 +555,13 @@ export class DefaultSettings extends Disposable {
 	}
 
 	private matchesScope(property: IConfigurationNode): boolean {
-		if (this.configurationScope === ConfigurationScope.WINDOW) {
-			return true;
+		if (this.target === ConfigurationTarget.WORKSPACE_FOLDER) {
+			return property.scope === ConfigurationScope.RESOURCE;
 		}
-		return property.scope === this.configurationScope;
+		if (this.target === ConfigurationTarget.WORKSPACE) {
+			return property.scope === ConfigurationScope.WINDOW || property.scope === ConfigurationScope.RESOURCE;
+		}
+		return true;
 	}
 
 	private compareConfigurationNodes(c1: IConfigurationNode, c2: IConfigurationNode): number {
@@ -603,7 +606,6 @@ export class DefaultSettingsEditorModel extends AbstractSettingsModel implements
 	constructor(
 		private _uri: URI,
 		reference: IReference<ITextEditorModel>,
-		readonly configurationScope: ConfigurationScope,
 		private readonly defaultSettings: DefaultSettings
 	) {
 		super();
@@ -615,6 +617,10 @@ export class DefaultSettingsEditorModel extends AbstractSettingsModel implements
 
 	public get uri(): URI {
 		return this._uri;
+	}
+
+	public get target(): ConfigurationTarget {
+		return this.defaultSettings.target;
 	}
 
 	public get settingsGroups(): ISettingsGroup[] {
