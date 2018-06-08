@@ -3,39 +3,21 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { CodeLens, CancellationToken, TextDocument, Range, workspace } from 'vscode';
+import * as vscode from 'vscode';
+import * as nls from 'vscode-nls';
 import * as Proto from '../protocol';
 import * as PConst from '../protocol.const';
-
-import { TypeScriptBaseCodeLensProvider, ReferencesCodeLens, CachedNavTreeResponse } from './baseCodeLensProvider';
 import { ITypeScriptServiceClient } from '../typescriptService';
+import API from '../utils/api';
+import { ConfigurationDependentRegistration, VersionDependentRegistration } from '../utils/dependentRegistration';
 import * as typeConverters from '../utils/typeConverters';
+import { CachedNavTreeResponse, ReferencesCodeLens, TypeScriptBaseCodeLensProvider } from './baseCodeLensProvider';
 
-import * as nls from 'vscode-nls';
 const localize = nls.loadMessageBundle();
 
-export default class TypeScriptReferencesCodeLensProvider extends TypeScriptBaseCodeLensProvider {
-	public constructor(
-		client: ITypeScriptServiceClient,
-		private readonly language: string,
-		cachedResponse: CachedNavTreeResponse
-	) {
-		super(client, cachedResponse);
-	}
+class TypeScriptReferencesCodeLensProvider extends TypeScriptBaseCodeLensProvider {
 
-	public updateConfiguration(): void {
-		const config = workspace.getConfiguration(this.language);
-		this.setEnabled(config.get('referencesCodeLens.enabled', false));
-	}
-
-	async provideCodeLenses(document: TextDocument, token: CancellationToken): Promise<CodeLens[]> {
-		if (!this.client.apiVersion.has206Features()) {
-			return [];
-		}
-		return super.provideCodeLenses(document, token);
-	}
-
-	public resolveCodeLens(inputCodeLens: CodeLens, token: CancellationToken): Promise<CodeLens> {
+	public resolveCodeLens(inputCodeLens: vscode.CodeLens, token: vscode.CancellationToken): Promise<vscode.CodeLens> {
 		const codeLens = inputCodeLens as ReferencesCodeLens;
 		const args = typeConverters.Position.toFileLocationRequestArgs(codeLens.file, codeLens.range.start);
 		return this.client.execute('references', args, token).then(response => {
@@ -45,7 +27,7 @@ export default class TypeScriptReferencesCodeLensProvider extends TypeScriptBase
 
 			const locations = response.body.refs
 				.map(reference =>
-					typeConverters.Location.fromTextSpan(this.client.asUrl(reference.file), reference))
+					typeConverters.Location.fromTextSpan(this.client.toResource(reference.file), reference))
 				.filter(location =>
 					// Exclude original definition from references
 					!(location.uri.toString() === codeLens.document.toString() &&
@@ -69,10 +51,10 @@ export default class TypeScriptReferencesCodeLensProvider extends TypeScriptBase
 	}
 
 	protected extractSymbol(
-		document: TextDocument,
+		document: vscode.TextDocument,
 		item: Proto.NavigationTree,
 		parent: Proto.NavigationTree | null
-	): Range | null {
+	): vscode.Range | null {
 		if (parent && parent.kind === PConst.Kind.enum) {
 			return super.getSymbolRange(document, item);
 		}
@@ -107,4 +89,17 @@ export default class TypeScriptReferencesCodeLensProvider extends TypeScriptBase
 
 		return null;
 	}
+}
+
+export function register(
+	selector: vscode.DocumentSelector,
+	modeId: string,
+	client: ITypeScriptServiceClient,
+	cachedResponse: CachedNavTreeResponse,
+) {
+	return new VersionDependentRegistration(client, API.v206, () =>
+		new ConfigurationDependentRegistration(modeId, 'referencesCodeLens.enabled', () => {
+			return vscode.languages.registerCodeLensProvider(selector,
+				new TypeScriptReferencesCodeLensProvider(client, cachedResponse));
+		}));
 }

@@ -4,18 +4,17 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as vscode from 'vscode';
-
+import * as nls from 'vscode-nls';
 import * as Proto from '../protocol';
 import { ITypeScriptServiceClient } from '../typescriptService';
-import * as typeConverters from '../utils/typeConverters';
-import FileConfigurationManager from './fileConfigurationManager';
-import { getEditForCodeAction, applyCodeActionCommands } from '../utils/codeAction';
+import API from '../utils/api';
+import { applyCodeActionCommands, getEditForCodeAction } from '../utils/codeAction';
 import { Command, CommandManager } from '../utils/commandManager';
-import { DiagnosticsManager } from './diagnostics';
-import BufferSyncSupport from './bufferSyncSupport';
-
-import * as nls from 'vscode-nls';
 import TelemetryReporter from '../utils/telemetry';
+import * as typeConverters from '../utils/typeConverters';
+import { DiagnosticsManager } from './diagnostics';
+import FileConfigurationManager from './fileConfigurationManager';
+
 const localize = nls.loadMessageBundle();
 
 class ApplyCodeActionCommand implements Command {
@@ -155,7 +154,7 @@ class SupportedCodeActionProvider {
 	}
 }
 
-export default class TypeScriptQuickFixProvider implements vscode.CodeActionProvider {
+class TypeScriptQuickFixProvider implements vscode.CodeActionProvider {
 
 	private readonly supportedCodeActionProvider: SupportedCodeActionProvider;
 
@@ -164,7 +163,6 @@ export default class TypeScriptQuickFixProvider implements vscode.CodeActionProv
 		private readonly formattingConfigurationManager: FileConfigurationManager,
 		commandManager: CommandManager,
 		private readonly diagnosticsManager: DiagnosticsManager,
-		private readonly bufferSyncSupport: BufferSyncSupport,
 		telemetryReporter: TelemetryReporter
 	) {
 		commandManager.register(new ApplyCodeActionCommand(client, telemetryReporter));
@@ -179,11 +177,11 @@ export default class TypeScriptQuickFixProvider implements vscode.CodeActionProv
 		context: vscode.CodeActionContext,
 		token: vscode.CancellationToken
 	): Promise<vscode.CodeAction[]> {
-		if (!this.client.apiVersion.has213Features()) {
+		if (!this.client.apiVersion.gte(API.v213)) {
 			return [];
 		}
 
-		const file = this.client.normalizePath(document.uri);
+		const file = this.client.toPath(document.uri);
 		if (!file) {
 			return [];
 		}
@@ -193,7 +191,7 @@ export default class TypeScriptQuickFixProvider implements vscode.CodeActionProv
 			return [];
 		}
 
-		if (this.bufferSyncSupport.hasPendingDiagnostics(document.uri)) {
+		if (this.client.bufferSyncSupport.hasPendingDiagnostics(document.uri)) {
 			return [];
 		}
 
@@ -261,7 +259,7 @@ export default class TypeScriptQuickFixProvider implements vscode.CodeActionProv
 		diagnostic: vscode.Diagnostic,
 		tsAction: Proto.CodeFixAction,
 	): Promise<vscode.CodeAction | undefined> {
-		if (!tsAction.fixId || !this.client.apiVersion.has270Features()) {
+		if (!tsAction.fixId || !this.client.apiVersion.gte(API.v270)) {
 			return undefined;
 		}
 
@@ -282,4 +280,16 @@ export default class TypeScriptQuickFixProvider implements vscode.CodeActionProv
 		};
 		return action;
 	}
+}
+
+export function register(
+	selector: vscode.DocumentSelector,
+	client: ITypeScriptServiceClient,
+	fileConfigurationManager: FileConfigurationManager,
+	commandManager: CommandManager,
+	diagnosticsManager: DiagnosticsManager,
+	telemetryReporter: TelemetryReporter
+) {
+	return vscode.languages.registerCodeActionsProvider(selector,
+		new TypeScriptQuickFixProvider(client, fileConfigurationManager, commandManager, diagnosticsManager, telemetryReporter));
 }

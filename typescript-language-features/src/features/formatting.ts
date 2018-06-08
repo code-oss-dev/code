@@ -3,14 +3,15 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { DocumentRangeFormattingEditProvider, OnTypeFormattingEditProvider, FormattingOptions, TextDocument, Position, Range, CancellationToken, TextEdit, WorkspaceConfiguration, Disposable, languages, workspace, DocumentSelector } from 'vscode';
-
+import * as vscode from 'vscode';
 import * as Proto from '../protocol';
 import { ITypeScriptServiceClient } from '../typescriptService';
+import { ConfigurationDependentRegistration } from '../utils/dependentRegistration';
 import * as typeConverters from '../utils/typeConverters';
 import FileConfigurationManager from './fileConfigurationManager';
 
-export class TypeScriptFormattingProvider implements DocumentRangeFormattingEditProvider, OnTypeFormattingEditProvider {
+
+class TypeScriptFormattingProvider implements vscode.DocumentRangeFormattingEditProvider, vscode.OnTypeFormattingEditProvider {
 	private enabled: boolean = true;
 
 	public constructor(
@@ -18,7 +19,7 @@ export class TypeScriptFormattingProvider implements DocumentRangeFormattingEdit
 		private readonly formattingOptionsManager: FileConfigurationManager
 	) { }
 
-	public updateConfiguration(config: WorkspaceConfiguration): void {
+	public updateConfiguration(config: vscode.WorkspaceConfiguration): void {
 		this.enabled = config.get('format.enable', true);
 	}
 
@@ -27,11 +28,11 @@ export class TypeScriptFormattingProvider implements DocumentRangeFormattingEdit
 	}
 
 	private async doFormat(
-		document: TextDocument,
-		options: FormattingOptions,
+		document: vscode.TextDocument,
+		options: vscode.FormattingOptions,
 		args: Proto.FormatRequestArgs,
-		token: CancellationToken
-	): Promise<TextEdit[]> {
+		token: vscode.CancellationToken
+	): Promise<vscode.TextEdit[]> {
 		await this.formattingOptionsManager.ensureConfigurationOptions(document, options, token);
 		try {
 			const response = await this.client.execute('format', args, token);
@@ -45,12 +46,12 @@ export class TypeScriptFormattingProvider implements DocumentRangeFormattingEdit
 	}
 
 	public async provideDocumentRangeFormattingEdits(
-		document: TextDocument,
-		range: Range,
-		options: FormattingOptions,
-		token: CancellationToken
-	): Promise<TextEdit[]> {
-		const absPath = this.client.normalizePath(document.uri);
+		document: vscode.TextDocument,
+		range: vscode.Range,
+		options: vscode.FormattingOptions,
+		token: vscode.CancellationToken
+	): Promise<vscode.TextEdit[]> {
+		const absPath = this.client.toPath(document.uri);
 		if (!absPath) {
 			return [];
 		}
@@ -65,13 +66,13 @@ export class TypeScriptFormattingProvider implements DocumentRangeFormattingEdit
 	}
 
 	public async provideOnTypeFormattingEdits(
-		document: TextDocument,
-		position: Position,
+		document: vscode.TextDocument,
+		position: vscode.Position,
 		ch: string,
-		options: FormattingOptions,
-		token: CancellationToken
-	): Promise<TextEdit[]> {
-		const filepath = this.client.normalizePath(document.uri);
+		options: vscode.FormattingOptions,
+		token: vscode.CancellationToken
+	): Promise<vscode.TextEdit[]> {
+		const filepath = this.client.toPath(document.uri);
 		if (!filepath) {
 			return [];
 		}
@@ -87,7 +88,7 @@ export class TypeScriptFormattingProvider implements DocumentRangeFormattingEdit
 		try {
 			const response = await this.client.execute('formatonkey', args, token);
 			const edits = response.body;
-			const result: TextEdit[] = [];
+			const result: vscode.TextEdit[] = [];
 			if (!edits) {
 				return result;
 			}
@@ -116,31 +117,17 @@ export class TypeScriptFormattingProvider implements DocumentRangeFormattingEdit
 	}
 }
 
-export class FormattingProviderManager {
-	private formattingProviderRegistration: Disposable | undefined;
-
-	constructor(
-		private readonly modeId: string,
-		private readonly formattingProvider: TypeScriptFormattingProvider,
-		private readonly selector: DocumentSelector
-	) { }
-
-	public dispose() {
-		if (this.formattingProviderRegistration) {
-			this.formattingProviderRegistration.dispose();
-			this.formattingProviderRegistration = undefined;
-		}
-	}
-
-	public updateConfiguration(): void {
-		const config = workspace.getConfiguration(this.modeId);
-		this.formattingProvider.updateConfiguration(config);
-
-		if (!this.formattingProvider.isEnabled() && this.formattingProviderRegistration) {
-			this.formattingProviderRegistration.dispose();
-			this.formattingProviderRegistration = undefined;
-		} else if (this.formattingProvider.isEnabled() && !this.formattingProviderRegistration) {
-			this.formattingProviderRegistration = languages.registerDocumentRangeFormattingEditProvider(this.selector, this.formattingProvider);
-		}
-	}
+export function register(
+	selector: vscode.DocumentSelector,
+	modeId: string,
+	client: ITypeScriptServiceClient,
+	fileConfigurationManager: FileConfigurationManager
+) {
+	return new ConfigurationDependentRegistration(modeId, 'format.enable', () => {
+		const formattingProvider = new TypeScriptFormattingProvider(client, fileConfigurationManager);
+		return vscode.Disposable.from(
+			vscode.languages.registerOnTypeFormattingEditProvider(selector, formattingProvider, ';', '}', '\n'),
+			vscode.languages.registerDocumentRangeFormattingEditProvider(selector, formattingProvider),
+		);
+	});
 }

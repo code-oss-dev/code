@@ -4,12 +4,13 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as vscode from 'vscode';
-
 import * as Proto from '../protocol';
-import * as typeConverters from '../utils/typeConverters';
 import { ITypeScriptServiceClient } from '../typescriptService';
+import * as typeConverters from '../utils/typeConverters';
+import { VersionDependentRegistration } from '../utils/dependentRegistration';
+import API from '../utils/api';
 
-export default class TypeScriptFoldingProvider implements vscode.FoldingRangeProvider {
+class TypeScriptFoldingProvider implements vscode.FoldingRangeProvider {
 	public constructor(
 		private readonly client: ITypeScriptServiceClient
 	) { }
@@ -19,11 +20,7 @@ export default class TypeScriptFoldingProvider implements vscode.FoldingRangePro
 		_context: vscode.FoldingContext,
 		token: vscode.CancellationToken
 	): Promise<vscode.FoldingRange[] | undefined> {
-		if (!this.client.apiVersion.has280Features()) {
-			return;
-		}
-
-		const file = this.client.normalizePath(document.uri);
+		const file = this.client.toPath(document.uri);
 		if (!file) {
 			return;
 		}
@@ -72,4 +69,14 @@ export default class TypeScriptFoldingProvider implements vscode.FoldingRangePro
 			default: return undefined;
 		}
 	}
+}
+
+export function register(
+	selector: vscode.DocumentSelector,
+	client: ITypeScriptServiceClient,
+): vscode.Disposable {
+	return new VersionDependentRegistration(client, API.v280, () => {
+		return vscode.languages.registerFoldingRangeProvider(selector,
+			new TypeScriptFoldingProvider(client));
+	});
 }

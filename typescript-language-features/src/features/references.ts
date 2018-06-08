@@ -7,8 +7,9 @@ import * as vscode from 'vscode';
 
 import { ITypeScriptServiceClient } from '../typescriptService';
 import * as typeConverters from '../utils/typeConverters';
+import API from '../utils/api';
 
-export default class TypeScriptReferenceSupport implements vscode.ReferenceProvider {
+class TypeScriptReferenceSupport implements vscode.ReferenceProvider {
 	public constructor(
 		private readonly client: ITypeScriptServiceClient) { }
 
@@ -18,7 +19,7 @@ export default class TypeScriptReferenceSupport implements vscode.ReferenceProvi
 		options: vscode.ReferenceContext,
 		token: vscode.CancellationToken
 	): Promise<vscode.Location[]> {
-		const filepath = this.client.normalizePath(document.uri);
+		const filepath = this.client.toPath(document.uri);
 		if (!filepath) {
 			return [];
 		}
@@ -30,12 +31,12 @@ export default class TypeScriptReferenceSupport implements vscode.ReferenceProvi
 				return [];
 			}
 			const result: vscode.Location[] = [];
-			const has203Features = this.client.apiVersion.has203Features();
+			const has203Features = this.client.apiVersion.gte(API.v203);
 			for (const ref of msg.body.refs) {
 				if (!options.includeDeclaration && has203Features && ref.isDefinition) {
 					continue;
 				}
-				const url = this.client.asUrl(ref.file);
+				const url = this.client.toResource(ref.file);
 				const location = typeConverters.Location.fromTextSpan(url, ref);
 				result.push(location);
 			}
@@ -44,4 +45,12 @@ export default class TypeScriptReferenceSupport implements vscode.ReferenceProvi
 			return [];
 		}
 	}
+}
+
+export function register(
+	selector: vscode.DocumentSelector,
+	client: ITypeScriptServiceClient
+) {
+	return vscode.languages.registerReferenceProvider(selector,
+		new TypeScriptReferenceSupport(client));
 }

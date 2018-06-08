@@ -3,11 +3,12 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { Position, CompletionItemProvider, CompletionItemKind, TextDocument, CancellationToken, CompletionItem, Range } from 'vscode';
-
-import { ITypeScriptServiceClient } from '../typescriptService';
-
+import * as vscode from 'vscode';
 import * as nls from 'vscode-nls';
+import { ITypeScriptServiceClient } from '../typescriptService';
+import { VersionDependentRegistration } from '../utils/dependentRegistration';
+import API from '../utils/api';
+
 const localize = nls.loadMessageBundle();
 
 interface Directive {
@@ -34,21 +35,17 @@ const directives: Directive[] = [
 	}
 ];
 
-export default class DirectiveCommentCompletionProvider implements CompletionItemProvider {
+class DirectiveCommentCompletionProvider implements vscode.CompletionItemProvider {
 	constructor(
 		private readonly client: ITypeScriptServiceClient,
 	) { }
 
 	public provideCompletionItems(
-		document: TextDocument,
-		position: Position,
-		_token: CancellationToken
-	): CompletionItem[] {
-		if (!this.client.apiVersion.has230Features()) {
-			return [];
-		}
-
-		const file = this.client.normalizePath(document.uri);
+		document: vscode.TextDocument,
+		position: vscode.Position,
+		_token: vscode.CancellationToken
+	): vscode.CompletionItem[] {
+		const file = this.client.toPath(document.uri);
 		if (!file) {
 			return [];
 		}
@@ -58,9 +55,9 @@ export default class DirectiveCommentCompletionProvider implements CompletionIte
 		const match = prefix.match(/^\s*\/\/+\s?(@[a-zA-Z\-]*)?$/);
 		if (match) {
 			return directives.map(directive => {
-				const item = new CompletionItem(directive.value, CompletionItemKind.Snippet);
+				const item = new vscode.CompletionItem(directive.value, vscode.CompletionItemKind.Snippet);
 				item.detail = directive.description;
-				item.range = new Range(position.line, Math.max(0, position.character - (match[1] ? match[1].length : 0)), position.line, position.character);
+				item.range = new vscode.Range(position.line, Math.max(0, position.character - (match[1] ? match[1].length : 0)), position.line, position.character);
 				return item;
 			});
 		}
@@ -68,9 +65,20 @@ export default class DirectiveCommentCompletionProvider implements CompletionIte
 	}
 
 	public resolveCompletionItem(
-		item: CompletionItem,
-		_token: CancellationToken
+		item: vscode.CompletionItem,
+		_token: vscode.CancellationToken
 	) {
 		return item;
 	}
+}
+
+export function register(
+	selector: vscode.DocumentSelector,
+	client: ITypeScriptServiceClient,
+) {
+	return new VersionDependentRegistration(client, API.v230, () => {
+		return vscode.languages.registerCompletionItemProvider(selector,
+			new DirectiveCommentCompletionProvider(client),
+			'@');
+	});
 }

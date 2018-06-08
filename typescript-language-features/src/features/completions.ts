@@ -17,6 +17,7 @@ import * as nls from 'vscode-nls';
 import { applyCodeAction } from '../utils/codeAction';
 import { CommandManager, Command } from '../utils/commandManager';
 import FileConfigurationManager from './fileConfigurationManager';
+import API from '../utils/api';
 
 const localize = nls.loadMessageBundle();
 
@@ -244,7 +245,7 @@ namespace CompletionConfiguration {
 	}
 }
 
-export default class TypeScriptCompletionItemProvider implements vscode.CompletionItemProvider {
+class TypeScriptCompletionItemProvider implements vscode.CompletionItemProvider {
 
 	public static readonly triggerCharacters = ['.', '"', '\'', '/', '@', '<'];
 
@@ -274,7 +275,7 @@ export default class TypeScriptCompletionItemProvider implements vscode.Completi
 			});
 		}
 
-		const file = this.client.normalizePath(document.uri);
+		const file = this.client.toPath(document.uri);
 		if (!file) {
 			return [];
 		}
@@ -331,7 +332,7 @@ export default class TypeScriptCompletionItemProvider implements vscode.Completi
 			return undefined;
 		}
 
-		const filepath = this.client.normalizePath(item.document.uri);
+		const filepath = this.client.toPath(item.document.uri);
 		if (!filepath) {
 			return undefined;
 		}
@@ -447,7 +448,7 @@ export default class TypeScriptCompletionItemProvider implements vscode.Completi
 		line: vscode.TextLine,
 		position: vscode.Position
 	): boolean {
-		if ((context.triggerCharacter === '"' || context.triggerCharacter === '\'') && !this.client.apiVersion.has290Features()) {
+		if ((context.triggerCharacter === '"' || context.triggerCharacter === '\'') && !this.client.apiVersion.gte(API.v290)) {
 			if (!config.quickSuggestionsForPaths) {
 				return false;
 			}
@@ -471,7 +472,7 @@ export default class TypeScriptCompletionItemProvider implements vscode.Completi
 			}
 		}
 
-		if (context.triggerCharacter === '@' && !this.client.apiVersion.has290Features()) {
+		if (context.triggerCharacter === '@' && !this.client.apiVersion.gte(API.v290)) {
 			// make sure we are in something that looks like the start of a jsdoc comment
 			const pre = line.text.slice(0, position.character);
 			if (!pre.match(/^\s*\*[ ]?@/) && !pre.match(/\/\*\*+[ ]?@/)) {
@@ -480,7 +481,7 @@ export default class TypeScriptCompletionItemProvider implements vscode.Completi
 		}
 
 		if (context.triggerCharacter === '<') {
-			return this.client.apiVersion.has290Features();
+			return this.client.apiVersion.gte(API.v290);
 		}
 
 		return true;
@@ -580,4 +581,17 @@ export default class TypeScriptCompletionItemProvider implements vscode.Completi
 		snippet.appendTabstop(0);
 		return snippet;
 	}
+}
+
+
+export function register(
+	selector: vscode.DocumentSelector,
+	client: ITypeScriptServiceClient,
+	typingsStatus: TypingsStatus,
+	fileConfigurationManager: FileConfigurationManager,
+	commandManager: CommandManager,
+) {
+	return vscode.languages.registerCompletionItemProvider(selector,
+		new TypeScriptCompletionItemProvider(client, typingsStatus, fileConfigurationManager, commandManager),
+		...TypeScriptCompletionItemProvider.triggerCharacters);
 }

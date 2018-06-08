@@ -3,24 +3,24 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { RenameProvider, WorkspaceEdit, TextDocument, Position, CancellationToken } from 'vscode';
+import * as vscode from 'vscode';
 
 import * as Proto from '../protocol';
 import { ITypeScriptServiceClient } from '../typescriptService';
 import * as typeConverters from '../utils/typeConverters';
 
-export default class TypeScriptRenameProvider implements RenameProvider {
+class TypeScriptRenameProvider implements vscode.RenameProvider {
 	public constructor(
 		private readonly client: ITypeScriptServiceClient
 	) { }
 
 	public async provideRenameEdits(
-		document: TextDocument,
-		position: Position,
+		document: vscode.TextDocument,
+		position: vscode.Position,
 		newName: string,
-		token: CancellationToken
-	): Promise<WorkspaceEdit | null> {
-		const file = this.client.normalizePath(document.uri);
+		token: vscode.CancellationToken
+	): Promise<vscode.WorkspaceEdit | null> {
+		const file = this.client.toPath(document.uri);
 		if (!file) {
 			return null;
 		}
@@ -39,7 +39,7 @@ export default class TypeScriptRenameProvider implements RenameProvider {
 
 			const renameInfo = response.body.info;
 			if (!renameInfo.canRename) {
-				return Promise.reject<WorkspaceEdit>(renameInfo.localizedErrorMessage);
+				return Promise.reject<vscode.WorkspaceEdit>(renameInfo.localizedErrorMessage);
 			}
 
 			return this.toWorkspaceEdit(response.body.locs, newName);
@@ -53,9 +53,9 @@ export default class TypeScriptRenameProvider implements RenameProvider {
 		locations: ReadonlyArray<Proto.SpanGroup>,
 		newName: string
 	) {
-		const result = new WorkspaceEdit();
+		const result = new vscode.WorkspaceEdit();
 		for (const spanGroup of locations) {
-			const resource = this.client.asUrl(spanGroup.file);
+			const resource = this.client.toResource(spanGroup.file);
 			if (resource) {
 				for (const textSpan of spanGroup.locs) {
 					result.replace(resource, typeConverters.Range.fromTextSpan(textSpan), newName);
@@ -64,4 +64,11 @@ export default class TypeScriptRenameProvider implements RenameProvider {
 		}
 		return result;
 	}
+}
+
+export function register(
+	selector: vscode.DocumentSelector,
+	client: ITypeScriptServiceClient,
+) {
+	return vscode.languages.registerRenameProvider(selector, new TypeScriptRenameProvider(client));
 }
