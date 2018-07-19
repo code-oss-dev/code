@@ -5,17 +5,6 @@
 
 'use strict';
 
-import * as vscode from 'vscode';
+import { rgPath } from 'vscode-ripgrep';
 
-import * as path from 'path';
-
-export function fixDriveC(_path: string): string {
-	const root = path.parse(_path).root;
-	return root.toLowerCase() === 'c:/' ?
-		_path.replace(/^c:[/\\]/i, '/') :
-		_path;
-}
-
-export function anchorGlob(glob: string): string {
-	return glob.startsWith('**') || glob.startsWith('/') ? glob : `/${glob}`;
-}
+export { rgPath };
