@@ -4,9 +4,9 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as fs from 'fs';
-import { Uri } from 'vscode';
-import { memoize } from '../utils/memoize';
-import { getTempFile } from '../utils/temp';
+import * as vscode from 'vscode';
+import { memoize } from './memoize';
+import { getTempFile } from './temp';
 
 /**
  * Maps of file resources
@@ -15,46 +15,64 @@ import { getTempFile } from '../utils/temp';
  * file systems.
  */
 export class ResourceMap<T> {
-	private readonly _map = new Map<string, T>();
+	private readonly _map = new Map<string, { resource: vscode.Uri, value: T }>();
 
 	constructor(
-		private readonly _normalizePath?: (resource: Uri) => string | null
+		private readonly _normalizePath: (resource: vscode.Uri) => string | null = (resource) => resource.fsPath
 	) { }
 
-	public has(resource: Uri): boolean {
+	public get size() {
+		return this._map.size;
+	}
+
+	public has(resource: vscode.Uri): boolean {
 		const file = this.toKey(resource);
 		return !!file && this._map.has(file);
 	}
 
-	public get(resource: Uri): T | undefined {
+	public get(resource: vscode.Uri): T | undefined {
 		const file = this.toKey(resource);
-		return file ? this._map.get(file) : undefined;
+		if (!file) {
+			return undefined;
+		}
+		const entry = this._map.get(file);
+		return entry ? entry.value : undefined;
 	}
 
-	public set(resource: Uri, value: T) {
+	public set(resource: vscode.Uri, value: T) {
 		const file = this.toKey(resource);
-		if (file) {
-			this._map.set(file, value);
+		if (!file) {
+			return;
+		}
+		const entry = this._map.get(file);
+		if (entry) {
+			entry.value = value;
+		} else {
+			this._map.set(file, { resource, value });
 		}
 	}
 
-	public delete(resource: Uri): void {
+	public delete(resource: vscode.Uri): void {
 		const file = this.toKey(resource);
 		if (file) {
 			this._map.delete(file);
 		}
 	}
 
+	public clear(): void {
+		this._map.clear();
+	}
+
 	public get values(): Iterable<T> {
+		return Array.from(this._map.values()).map(x => x.value);
+	}
+
+	public get entries(): Iterable<{ resource: vscode.Uri, value: T }> {
 		return this._map.values();
 	}
 
-	public get keys(): Iterable<string> {
-		return this._map.keys();
-	}
-
-	private toKey(resource: Uri): string | null {
-		const key = this._normalizePath ? this._normalizePath(resource) : resource.fsPath;
+	private toKey(resource: vscode.Uri): string | null {
+		const key = this._normalizePath(resource);
 		if (!key) {
 			return key;
 		}
