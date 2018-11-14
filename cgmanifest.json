@@ -1,15 +1,14 @@
 {
-	"Registrations": [
+	"registrations": [
 		{
 			"component": {
 				"type": "git",
 				"git": {
 					"name": "Jxck/assert",
 					"repositoryUrl": "https://github.com/Jxck/assert",
-					"commitHash": "a617d24d4e752e4299a6de4f78b1c23bfa9c49e8"
+					"commitHash": ""
 				}
 			},
-			"DevelopmentDependency": true,
 			"licenseDetail": [
 				"The MIT License (MIT)",
 				"",
@@ -35,8 +34,9 @@
 				"LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,",
 				"OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE."
 			],
-			"license": "MIT"
+			"license": "MIT",
+			"version": "1.0.0"
 		}
 	],
-	"Version": 1
+	"version": 1
 }
