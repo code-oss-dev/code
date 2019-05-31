@@ -3,11 +3,8 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-.monaco-workbench .quick-open-task-configure {
-	background-image: url('configure.svg');
-}
-
-.vs-dark .monaco-workbench .quick-open-task-configure,
-.hc-black .monaco-workbench .quick-open-task-configure {
-	background-image: url('configure-inverse.svg');
+declare module 'vsda' {
+	export class signer {
+		sign(arg: any): any;
+	}
 }
