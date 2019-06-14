@@ -3,6 +3,13 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-.update-activity {
-	-webkit-mask: url('update.svg') no-repeat 50% 50%;
+import { IWebviewService, Webview, WebviewContentOptions, WebviewOptions } from 'vs/workbench/contrib/webview/common/webview';
+
+export class NullWebviewService implements IWebviewService {
+
+	_serviceBrand: any;
+
+	createWebview(_options: WebviewOptions, _contentOptions: WebviewContentOptions): Webview {
+		throw new Error('not supported');
+	}
 }
