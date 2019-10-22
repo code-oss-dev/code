@@ -933,10 +933,10 @@ declare module 'vscode' {
 		 * The task's execution engine
 		 */
 		execution2?: ProcessExecution | ShellExecution | CustomExecution;
-	}
-	//#endregion
 
-	//#region Tasks
+		detail?: string;
+	}
+
 	export interface TaskPresentationOptions {
 		/**
 		 * Controls whether the task is executed in a specific terminal group using split panes.
