@@ -3,6 +3,13 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-.monaco-workbench .activitybar > .content .monaco-action-bar .action-label.extensions {
-	-webkit-mask: url('extensions-activity-bar.svg') no-repeat 50% 50%;
+import { IWorkspaceIdentifier } from 'vs/platform/workspaces/common/workspaces';
+import { URI } from 'vs/base/common/uri';
+import { hash } from 'vs/base/common/hash';
+
+export function getWorkspaceIdentifier(workspacePath: URI): IWorkspaceIdentifier {
+	return {
+		id: hash(workspacePath.toString()).toString(16),
+		configPath: workspacePath
+	};
 }
