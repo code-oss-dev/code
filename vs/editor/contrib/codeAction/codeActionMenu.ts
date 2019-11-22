@@ -35,11 +35,15 @@ class CodeActionAction extends Action {
 		public readonly action: CodeAction,
 		callback: () => Promise<void>,
 	) {
-		super(action.command ? action.command.id : action.title, action.title, undefined, true, callback);
+		super(action.command ? action.command.id : action.title, action.title, undefined, !action.disabled, callback);
 	}
 }
 
-export class CodeActionWidget extends Disposable {
+export interface CodeActionShowOptions {
+	readonly includeDisabledActions: boolean;
+}
+
+export class CodeActionMenu extends Disposable {
 
 	private _visible: boolean = false;
 	private readonly _showingActions = this._register(new MutableDisposable<CodeActionSet>());
@@ -48,9 +52,9 @@ export class CodeActionWidget extends Disposable {
 
 	constructor(
 		private readonly _editor: ICodeEditor,
-		private readonly _contextMenuService: IContextMenuService,
-		keybindingService: IKeybindingService,
 		private readonly _delegate: CodeActionWidgetDelegate,
+		@IContextMenuService private readonly _contextMenuService: IContextMenuService,
+		@IKeybindingService keybindingService: IKeybindingService,
 	) {
 		super();
 
@@ -63,8 +67,9 @@ export class CodeActionWidget extends Disposable {
 		return this._visible;
 	}
 
-	public async show(codeActions: CodeActionSet, at: IAnchor | IPosition): Promise<void> {
-		if (!codeActions.actions.length) {
+	public async show(codeActions: CodeActionSet, at: IAnchor | IPosition, options: CodeActionShowOptions): Promise<void> {
+		const actionsToShow = options.includeDisabledActions ? codeActions.allActions : codeActions.validActions;
+		if (!actionsToShow.length) {
 			this._visible = false;
 			return;
 		}
@@ -78,7 +83,7 @@ export class CodeActionWidget extends Disposable {
 		this._visible = true;
 		this._showingActions.value = codeActions;
 
-		const actions = codeActions.actions.map(action =>
+		const menuActions = actionsToShow.map(action =>
 			new CodeActionAction(action, () => this._delegate.onSelectCodeAction(action)));
 
 		const anchor = Position.isIPosition(at) ? this._toCoords(at) : at || { x: 0, y: 0 };
@@ -86,7 +91,7 @@ export class CodeActionWidget extends Disposable {
 
 		this._contextMenuService.showContextMenu({
 			getAnchor: () => anchor,
-			getActions: () => actions,
+			getActions: () => menuActions,
 			onHide: () => {
 				this._visible = false;
 				this._editor.focus();
