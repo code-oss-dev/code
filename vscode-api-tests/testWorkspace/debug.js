@@ -3,4 +3,8 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-/// <reference path='../../../../src/vs/vscode.proposed.d.ts'/>
+let y = 0;
+for (let i = 0; i < 100; i++) {
+	console.log(y);
+	y = y + i;
+}
