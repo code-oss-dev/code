@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-.context-view {
-	position: absolute;
-	z-index: 2500;
+.monaco-editor .selection-anchor {
+	background-color: #007ACC;
+	width: 2px !important;
 }
