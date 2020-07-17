@@ -3,19 +3,10 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-//@ts-check
+import { Disposable } from 'vscode';
+import { PushErrorHandler } from './api/git';
 
-'use strict';
-
-const path = require('path');
-const withDefaults = require('../shared.webpack.config');
-
-module.exports = withDefaults({
-	context: __dirname,
-	entry: {
-		extension: './src/extension.ts',
-	},
-	externals: {
-		'keytar': 'commonjs keytar'
-	}
-});
+export interface IPushErrorHandlerRegistry {
+	registerPushErrorHandler(provider: PushErrorHandler): Disposable;
+	getPushErrorHandlers(): PushErrorHandler[];
+}
