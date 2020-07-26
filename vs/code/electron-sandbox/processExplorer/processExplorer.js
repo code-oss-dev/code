@@ -14,6 +14,6 @@ const bootstrapWindow = (() => {
 	return window.MonacoBootstrapWindow;
 })();
 
-bootstrapWindow.load(['vs/code/electron-browser/issue/issueReporterMain'], function (issueReporter, configuration) {
-	issueReporter.startup(configuration);
-}, { forceEnableDeveloperKeybindings: true, disallowReloadKeybinding: true });
+bootstrapWindow.load(['vs/code/electron-sandbox/processExplorer/processExplorerMain'], function (processExplorer, configuration) {
+	processExplorer.startup(configuration.windowId, configuration.data);
+}, { forceEnableDeveloperKeybindings: true });
