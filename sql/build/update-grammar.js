@@ -2,16 +2,9 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-
-//@ts-check
-
 'use strict';
 
-const withDefaults = require('../shared.webpack.config');
+var updateGrammar = require('../../../build/npm/update-grammar');
+updateGrammar.update('microsoft/vscode-mssql', 'syntaxes/SQL.plist', './syntaxes/sql.tmLanguage.json', undefined, 'main');
 
-module.exports = withDefaults({
-	context: __dirname,
-	entry: {
-		extension: './src/extension.ts'
-	}
-});
+

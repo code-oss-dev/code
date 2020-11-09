@@ -3,8 +3,14 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-/// <reference path="../../../../src/vs/vscode.d.ts" />
-/// <reference path="../../../../src/vs/vscode.proposed.d.ts" />
-/// <reference path="../../../types/lib.textEncoder.d.ts" />
-/// <reference path="../../../types/lib.url.d.ts" />
-/// <reference types='@types/node'/>
+import * as vscode from 'vscode';
+
+export const exists = async (resource: vscode.Uri): Promise<boolean> => {
+	try {
+		const stat = await vscode.workspace.fs.stat(resource);
+		// stat.type is an enum flag
+		return !!(stat.type & vscode.FileType.File);
+	} catch {
+		return false;
+	}
+};
