@@ -3,5 +3,10 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import './actions/expandAbbreviation';
+import { PerformanceEntry } from 'perf_hooks';
 
+/**
+ * Return all performance entries captured so far and stop startup
+ * performance recording.
+ */
+export function consumeAndStop(): PerformanceEntry[];
