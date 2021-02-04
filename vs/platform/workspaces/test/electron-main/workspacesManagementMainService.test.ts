@@ -10,7 +10,7 @@ import * as path from 'vs/base/common/path';
 import * as pfs from 'vs/base/node/pfs';
 import { EnvironmentMainService } from 'vs/platform/environment/electron-main/environmentMainService';
 import { parseArgs, OPTIONS } from 'vs/platform/environment/node/argv';
-import { WorkspacesMainService, IStoredWorkspace } from 'vs/platform/workspaces/electron-main/workspacesMainService';
+import { WorkspacesManagementMainService, IStoredWorkspace, getSingleFolderWorkspaceIdentifier, getWorkspaceIdentifier } from 'vs/platform/workspaces/electron-main/workspacesManagementMainService';
 import { WORKSPACE_EXTENSION, IRawFileWorkspaceFolder, IWorkspaceFolderCreationData, IRawUriWorkspaceFolder, rewriteWorkspaceFileForNewLocation, IWorkspaceIdentifier, IStoredWorkspaceFolder } from 'vs/platform/workspaces/common/workspaces';
 import { NullLogService } from 'vs/platform/log/common/log';
 import { URI } from 'vs/base/common/uri';
@@ -23,95 +23,36 @@ import { INativeOpenDialogOptions } from 'vs/platform/dialogs/common/dialogs';
 import { IBackupMainService, IWorkspaceBackupInfo } from 'vs/platform/backup/electron-main/backup';
 import { IEmptyWindowBackupInfo } from 'vs/platform/backup/node/backup';
 
-export class TestDialogMainService implements IDialogMainService {
-	declare readonly _serviceBrand: undefined;
+suite('WorkspacesManagementMainService', () => {
 
-	pickFileFolder(options: INativeOpenDialogOptions, window?: Electron.BrowserWindow | undefined): Promise<string[] | undefined> {
-		throw new Error('Method not implemented.');
+	class TestDialogMainService implements IDialogMainService {
+
+		declare readonly _serviceBrand: undefined;
+
+		pickFileFolder(options: INativeOpenDialogOptions, window?: Electron.BrowserWindow | undefined): Promise<string[] | undefined> { throw new Error('Method not implemented.'); }
+		pickFolder(options: INativeOpenDialogOptions, window?: Electron.BrowserWindow | undefined): Promise<string[] | undefined> { throw new Error('Method not implemented.'); }
+		pickFile(options: INativeOpenDialogOptions, window?: Electron.BrowserWindow | undefined): Promise<string[] | undefined> { throw new Error('Method not implemented.'); }
+		pickWorkspace(options: INativeOpenDialogOptions, window?: Electron.BrowserWindow | undefined): Promise<string[] | undefined> { throw new Error('Method not implemented.'); }
+		showMessageBox(options: Electron.MessageBoxOptions, window?: Electron.BrowserWindow | undefined): Promise<Electron.MessageBoxReturnValue> { throw new Error('Method not implemented.'); }
+		showSaveDialog(options: Electron.SaveDialogOptions, window?: Electron.BrowserWindow | undefined): Promise<Electron.SaveDialogReturnValue> { throw new Error('Method not implemented.'); }
+		showOpenDialog(options: Electron.OpenDialogOptions, window?: Electron.BrowserWindow | undefined): Promise<Electron.OpenDialogReturnValue> { throw new Error('Method not implemented.'); }
 	}
 
-	pickFolder(options: INativeOpenDialogOptions, window?: Electron.BrowserWindow | undefined): Promise<string[] | undefined> {
-		throw new Error('Method not implemented.');
-	}
+	class TestBackupMainService implements IBackupMainService {
 
-	pickFile(options: INativeOpenDialogOptions, window?: Electron.BrowserWindow | undefined): Promise<string[] | undefined> {
-		throw new Error('Method not implemented.');
-	}
+		declare readonly _serviceBrand: undefined;
 
-	pickWorkspace(options: INativeOpenDialogOptions, window?: Electron.BrowserWindow | undefined): Promise<string[] | undefined> {
-		throw new Error('Method not implemented.');
-	}
-
-	showMessageBox(options: Electron.MessageBoxOptions, window?: Electron.BrowserWindow | undefined): Promise<Electron.MessageBoxReturnValue> {
-		throw new Error('Method not implemented.');
-	}
-
-	showSaveDialog(options: Electron.SaveDialogOptions, window?: Electron.BrowserWindow | undefined): Promise<Electron.SaveDialogReturnValue> {
-		throw new Error('Method not implemented.');
-	}
-
-	showOpenDialog(options: Electron.OpenDialogOptions, window?: Electron.BrowserWindow | undefined): Promise<Electron.OpenDialogReturnValue> {
-		throw new Error('Method not implemented.');
-	}
-}
-
-export class TestBackupMainService implements IBackupMainService {
-
-	declare readonly _serviceBrand: undefined;
-
-	isHotExitEnabled(): boolean {
-		throw new Error('Method not implemented.');
-	}
-
-	getWorkspaceBackups(): IWorkspaceBackupInfo[] {
-		throw new Error('Method not implemented.');
-	}
-
-	getFolderBackupPaths(): URI[] {
-		throw new Error('Method not implemented.');
-	}
-
-	getEmptyWindowBackupPaths(): IEmptyWindowBackupInfo[] {
-		throw new Error('Method not implemented.');
-	}
-
-	registerWorkspaceBackupSync(workspace: IWorkspaceBackupInfo, migrateFrom?: string | undefined): string {
-		throw new Error('Method not implemented.');
-	}
-
-	registerFolderBackupSync(folderUri: URI): string {
-		throw new Error('Method not implemented.');
-	}
-
-	registerEmptyWindowBackupSync(backupFolder?: string | undefined, remoteAuthority?: string | undefined): string {
-		throw new Error('Method not implemented.');
-	}
-
-	unregisterWorkspaceBackupSync(workspace: IWorkspaceIdentifier): void {
-		throw new Error('Method not implemented.');
-	}
-
-	unregisterFolderBackupSync(folderUri: URI): void {
-		throw new Error('Method not implemented.');
-	}
-
-	unregisterEmptyWindowBackupSync(backupFolder: string): void {
-		throw new Error('Method not implemented.');
-	}
-
-	async getDirtyWorkspaces(): Promise<(IWorkspaceIdentifier | URI)[]> {
-		return [];
-	}
-}
-
-suite('WorkspacesMainService', () => {
-	const parentDir = getRandomTestPath(os.tmpdir(), 'vsctests', 'workspacesservice');
-	const untitledWorkspacesHomePath = path.join(parentDir, 'Workspaces');
-
-	class TestEnvironmentService extends EnvironmentMainService {
-		get untitledWorkspacesHome(): URI {
-			return URI.file(untitledWorkspacesHomePath);
-		}
+		isHotExitEnabled(): boolean { throw new Error('Method not implemented.'); }
+		getWorkspaceBackups(): IWorkspaceBackupInfo[] { throw new Error('Method not implemented.'); }
+		getFolderBackupPaths(): URI[] { throw new Error('Method not implemented.'); }
+		getEmptyWindowBackupPaths(): IEmptyWindowBackupInfo[] { throw new Error('Method not implemented.'); }
+		registerWorkspaceBackupSync(workspace: IWorkspaceBackupInfo, migrateFrom?: string | undefined): string { throw new Error('Method not implemented.'); }
+		registerFolderBackupSync(folderUri: URI): string { throw new Error('Method not implemented.'); }
+		registerEmptyWindowBackupSync(backupFolder?: string | undefined, remoteAuthority?: string | undefined): string { throw new Error('Method not implemented.'); }
+		unregisterWorkspaceBackupSync(workspace: IWorkspaceIdentifier): void { throw new Error('Method not implemented.'); }
+		unregisterFolderBackupSync(folderUri: URI): void { throw new Error('Method not implemented.'); }
+		unregisterEmptyWindowBackupSync(backupFolder: string): void { throw new Error('Method not implemented.'); }
+		async getDirtyWorkspaces(): Promise<(IWorkspaceIdentifier | URI)[]> { return []; }
 	}
 
 	function createUntitledWorkspace(folders: string[], names?: string[]) {
@@ -138,22 +79,33 @@ suite('WorkspacesMainService', () => {
 		return service.createUntitledWorkspaceSync(folders.map((folder, index) => ({ uri: URI.file(folder), name: names ? names[index] : undefined } as IWorkspaceFolderCreationData)));
 	}
 
-	const environmentService = new TestEnvironmentService(parseArgs(process.argv, OPTIONS));
-	const logService = new NullLogService();
-
-	let service: WorkspacesMainService;
+	let testDir: string;
+	let untitledWorkspacesHomePath: string;
+	let environmentService: EnvironmentMainService;
+	let service: WorkspacesManagementMainService;
 
 	setup(async () => {
-		service = new WorkspacesMainService(environmentService, logService, new TestBackupMainService(), new TestDialogMainService());
+		testDir = getRandomTestPath(os.tmpdir(), 'vsctests', 'workspacesmanagementmainservice');
+		untitledWorkspacesHomePath = path.join(testDir, 'Workspaces');
 
-		// Delete any existing backups completely and then re-create it.
-		await pfs.rimraf(untitledWorkspacesHomePath);
+		environmentService = new class TestEnvironmentService extends EnvironmentMainService {
+			constructor() {
+				super(parseArgs(process.argv, OPTIONS));
+			}
+			get untitledWorkspacesHome(): URI {
+				return URI.file(untitledWorkspacesHomePath);
+			}
+		};
 
-		return pfs.mkdirp(untitledWorkspacesHomePath);
+		service = new WorkspacesManagementMainService(environmentService, new NullLogService(), new TestBackupMainService(), new TestDialogMainService());
+
+		return fs.promises.mkdir(untitledWorkspacesHomePath, { recursive: true });
 	});
 
 	teardown(() => {
-		return pfs.rimraf(untitledWorkspacesHomePath);
+		service.dispose();
+
+		return pfs.rimraf(testDir);
 	});
 
 	function assertPathEquals(p1: string, p2: string): void {
@@ -162,11 +114,11 @@ suite('WorkspacesMainService', () => {
 			p2 = normalizeDriveLetter(p2);
 		}
 
-		assert.equal(p1, p2);
+		assert.strictEqual(p1, p2);
 	}
 
 	function assertEqualURI(u1: URI, u2: URI): void {
-		assert.equal(u1.toString(), u2.toString());
+		assert.strictEqual(u1.toString(), u2.toString());
 	}
 
 	test('createWorkspace (folders)', async () => {
@@ -176,7 +128,7 @@ suite('WorkspacesMainService', () => {
 		assert.ok(service.isUntitledWorkspace(workspace));
 
 		const ws = (JSON.parse(fs.readFileSync(workspace.configPath.fsPath).toString()) as IStoredWorkspace);
-		assert.equal(ws.folders.length, 2);
+		assert.strictEqual(ws.folders.length, 2);
 		assertPathEquals((<IRawFileWorkspaceFolder>ws.folders[0]).path, process.cwd());
 		assertPathEquals((<IRawFileWorkspaceFolder>ws.folders[1]).path, os.tmpdir());
 		assert.ok(!(<IRawFileWorkspaceFolder>ws.folders[0]).name);
@@ -190,11 +142,11 @@ suite('WorkspacesMainService', () => {
 		assert.ok(service.isUntitledWorkspace(workspace));
 
 		const ws = (JSON.parse(fs.readFileSync(workspace.configPath.fsPath).toString()) as IStoredWorkspace);
-		assert.equal(ws.folders.length, 2);
+		assert.strictEqual(ws.folders.length, 2);
 		assertPathEquals((<IRawFileWorkspaceFolder>ws.folders[0]).path, process.cwd());
 		assertPathEquals((<IRawFileWorkspaceFolder>ws.folders[1]).path, os.tmpdir());
-		assert.equal((<IRawFileWorkspaceFolder>ws.folders[0]).name, 'currentworkingdirectory');
-		assert.equal((<IRawFileWorkspaceFolder>ws.folders[1]).name, 'tempdir');
+		assert.strictEqual((<IRawFileWorkspaceFolder>ws.folders[0]).name, 'currentworkingdirectory');
+		assert.strictEqual((<IRawFileWorkspaceFolder>ws.folders[1]).name, 'tempdir');
 	});
 
 	test('createUntitledWorkspace (folders as other resource URIs)', async () => {
@@ -207,12 +159,12 @@ suite('WorkspacesMainService', () => {
 		assert.ok(service.isUntitledWorkspace(workspace));
 
 		const ws = (JSON.parse(fs.readFileSync(workspace.configPath.fsPath).toString()) as IStoredWorkspace);
-		assert.equal(ws.folders.length, 2);
-		assert.equal((<IRawUriWorkspaceFolder>ws.folders[0]).uri, folder1URI.toString(true));
-		assert.equal((<IRawUriWorkspaceFolder>ws.folders[1]).uri, folder2URI.toString(true));
+		assert.strictEqual(ws.folders.length, 2);
+		assert.strictEqual((<IRawUriWorkspaceFolder>ws.folders[0]).uri, folder1URI.toString(true));
+		assert.strictEqual((<IRawUriWorkspaceFolder>ws.folders[1]).uri, folder2URI.toString(true));
 		assert.ok(!(<IRawFileWorkspaceFolder>ws.folders[0]).name);
 		assert.ok(!(<IRawFileWorkspaceFolder>ws.folders[1]).name);
-		assert.equal(ws.remoteAuthority, 'server');
+		assert.strictEqual(ws.remoteAuthority, 'server');
 	});
 
 	test('createWorkspaceSync (folders)', () => {
@@ -222,7 +174,7 @@ suite('WorkspacesMainService', () => {
 		assert.ok(service.isUntitledWorkspace(workspace));
 
 		const ws = JSON.parse(fs.readFileSync(workspace.configPath.fsPath).toString()) as IStoredWorkspace;
-		assert.equal(ws.folders.length, 2);
+		assert.strictEqual(ws.folders.length, 2);
 		assertPathEquals((<IRawFileWorkspaceFolder>ws.folders[0]).path, process.cwd());
 		assertPathEquals((<IRawFileWorkspaceFolder>ws.folders[1]).path, os.tmpdir());
 
@@ -237,12 +189,12 @@ suite('WorkspacesMainService', () => {
 		assert.ok(service.isUntitledWorkspace(workspace));
 
 		const ws = JSON.parse(fs.readFileSync(workspace.configPath.fsPath).toString()) as IStoredWorkspace;
-		assert.equal(ws.folders.length, 2);
+		assert.strictEqual(ws.folders.length, 2);
 		assertPathEquals((<IRawFileWorkspaceFolder>ws.folders[0]).path, process.cwd());
 		assertPathEquals((<IRawFileWorkspaceFolder>ws.folders[1]).path, os.tmpdir());
 
-		assert.equal((<IRawFileWorkspaceFolder>ws.folders[0]).name, 'currentworkingdirectory');
-		assert.equal((<IRawFileWorkspaceFolder>ws.folders[1]).name, 'tempdir');
+		assert.strictEqual((<IRawFileWorkspaceFolder>ws.folders[0]).name, 'currentworkingdirectory');
+		assert.strictEqual((<IRawFileWorkspaceFolder>ws.folders[1]).name, 'tempdir');
 	});
 
 	test('createUntitledWorkspaceSync (folders as other resource URIs)', () => {
@@ -255,9 +207,9 @@ suite('WorkspacesMainService', () => {
 		assert.ok(service.isUntitledWorkspace(workspace));
 
 		const ws = JSON.parse(fs.readFileSync(workspace.configPath.fsPath).toString()) as IStoredWorkspace;
-		assert.equal(ws.folders.length, 2);
-		assert.equal((<IRawUriWorkspaceFolder>ws.folders[0]).uri, folder1URI.toString(true));
-		assert.equal((<IRawUriWorkspaceFolder>ws.folders[1]).uri, folder2URI.toString(true));
+		assert.strictEqual(ws.folders.length, 2);
+		assert.strictEqual((<IRawUriWorkspaceFolder>ws.folders[0]).uri, folder1URI.toString(true));
+		assert.strictEqual((<IRawUriWorkspaceFolder>ws.folders[1]).uri, folder2URI.toString(true));
 
 		assert.ok(!(<IRawFileWorkspaceFolder>ws.folders[0]).name);
 		assert.ok(!(<IRawFileWorkspaceFolder>ws.folders[1]).name);
@@ -273,7 +225,7 @@ suite('WorkspacesMainService', () => {
 		workspace.configPath = URI.file(newPath);
 
 		const resolved = service.resolveLocalWorkspaceSync(workspace.configPath);
-		assert.equal(2, resolved!.folders.length);
+		assert.strictEqual(2, resolved!.folders.length);
 		assertEqualURI(resolved!.configPath, workspace.configPath);
 		assert.ok(resolved!.id);
 		fs.writeFileSync(workspace.configPath.fsPath, JSON.stringify({ something: 'something' })); // invalid workspace
@@ -327,7 +279,7 @@ suite('WorkspacesMainService', () => {
 		let workspaceConfigPath = URI.file(path.join(tmpDir, 'inside', 'myworkspace1.code-workspace'));
 		let newContent = rewriteWorkspaceFileForNewLocation(origContent, origConfigPath, false, workspaceConfigPath, extUriBiasedIgnorePathCase);
 		let ws = (JSON.parse(newContent) as IStoredWorkspace);
-		assert.equal(ws.folders.length, 3);
+		assert.strictEqual(ws.folders.length, 3);
 		assertPathEquals((<IRawFileWorkspaceFolder>ws.folders[0]).path, folder1); // absolute path because outside of tmpdir
 		assertPathEquals((<IRawFileWorkspaceFolder>ws.folders[1]).path, '.');
 		assertPathEquals((<IRawFileWorkspaceFolder>ws.folders[2]).path, 'somefolder');
@@ -336,7 +288,7 @@ suite('WorkspacesMainService', () => {
 		workspaceConfigPath = URI.file(path.join(tmpDir, 'myworkspace2.code-workspace'));
 		newContent = rewriteWorkspaceFileForNewLocation(newContent, origConfigPath, false, workspaceConfigPath, extUriBiasedIgnorePathCase);
 		ws = (JSON.parse(newContent) as IStoredWorkspace);
-		assert.equal(ws.folders.length, 3);
+		assert.strictEqual(ws.folders.length, 3);
 		assertPathEquals((<IRawFileWorkspaceFolder>ws.folders[0]).path, folder1);
 		assertPathEquals((<IRawFileWorkspaceFolder>ws.folders[1]).path, 'inside');
 		assertPathEquals((<IRawFileWorkspaceFolder>ws.folders[2]).path, isWindows ? 'inside\\somefolder' : 'inside/somefolder');
@@ -345,7 +297,7 @@ suite('WorkspacesMainService', () => {
 		workspaceConfigPath = URI.file(path.join(tmpDir, 'other', 'myworkspace2.code-workspace'));
 		newContent = rewriteWorkspaceFileForNewLocation(newContent, origConfigPath, false, workspaceConfigPath, extUriBiasedIgnorePathCase);
 		ws = (JSON.parse(newContent) as IStoredWorkspace);
-		assert.equal(ws.folders.length, 3);
+		assert.strictEqual(ws.folders.length, 3);
 		assertPathEquals((<IRawFileWorkspaceFolder>ws.folders[0]).path, folder1);
 		assertPathEquals((<IRawFileWorkspaceFolder>ws.folders[1]).path, isWindows ? '..\\inside' : '../inside');
 		assertPathEquals((<IRawFileWorkspaceFolder>ws.folders[2]).path, isWindows ? '..\\inside\\somefolder' : '../inside/somefolder');
@@ -354,10 +306,10 @@ suite('WorkspacesMainService', () => {
 		workspaceConfigPath = URI.parse('foo://foo/bar/myworkspace2.code-workspace');
 		newContent = rewriteWorkspaceFileForNewLocation(newContent, origConfigPath, false, workspaceConfigPath, extUriBiasedIgnorePathCase);
 		ws = (JSON.parse(newContent) as IStoredWorkspace);
-		assert.equal(ws.folders.length, 3);
-		assert.equal((<IRawUriWorkspaceFolder>ws.folders[0]).uri, URI.file(folder1).toString(true));
-		assert.equal((<IRawUriWorkspaceFolder>ws.folders[1]).uri, URI.file(tmpInsideDir).toString(true));
-		assert.equal((<IRawUriWorkspaceFolder>ws.folders[2]).uri, URI.file(path.join(tmpInsideDir, 'somefolder')).toString(true));
+		assert.strictEqual(ws.folders.length, 3);
+		assert.strictEqual((<IRawUriWorkspaceFolder>ws.folders[0]).uri, URI.file(folder1).toString(true));
+		assert.strictEqual((<IRawUriWorkspaceFolder>ws.folders[1]).uri, URI.file(tmpInsideDir).toString(true));
+		assert.strictEqual((<IRawUriWorkspaceFolder>ws.folders[2]).uri, URI.file(path.join(tmpInsideDir, 'somefolder')).toString(true));
 
 		fs.unlinkSync(firstConfigPath);
 	});
@@ -370,7 +322,7 @@ suite('WorkspacesMainService', () => {
 		origContent = `// this is a comment\n${origContent}`;
 
 		let newContent = rewriteWorkspaceFileForNewLocation(origContent, workspace.configPath, false, workspaceConfigPath, extUriBiasedIgnorePathCase);
-		assert.equal(0, newContent.indexOf('// this is a comment'));
+		assert.strictEqual(0, newContent.indexOf('// this is a comment'));
 		service.deleteUntitledWorkspaceSync(workspace);
 	});
 
@@ -419,14 +371,14 @@ suite('WorkspacesMainService', () => {
 
 	test('getUntitledWorkspaceSync', async function () {
 		let untitled = service.getUntitledWorkspacesSync();
-		assert.equal(untitled.length, 0);
+		assert.strictEqual(untitled.length, 0);
 
 		const untitledOne = await createUntitledWorkspace([process.cwd(), os.tmpdir()]);
 		assert.ok(fs.existsSync(untitledOne.configPath.fsPath));
 
 		untitled = service.getUntitledWorkspacesSync();
-		assert.equal(1, untitled.length);
-		assert.equal(untitledOne.id, untitled[0].workspace.id);
+		assert.strictEqual(1, untitled.length);
+		assert.strictEqual(untitledOne.id, untitled[0].workspace.id);
 
 		const untitledTwo = await createUntitledWorkspace([os.tmpdir(), process.cwd()]);
 		assert.ok(fs.existsSync(untitledTwo.configPath.fsPath));
@@ -438,14 +390,50 @@ suite('WorkspacesMainService', () => {
 		if (untitled.length === 1) {
 			assert.fail(`Unexpected workspaces count of 1 (expected 2), all workspaces:\n ${fs.readdirSync(untitledHome.fsPath).map(name => fs.readFileSync(joinPath(untitledHome, name, 'workspace.json').fsPath, 'utf8'))}, before getUntitledWorkspacesSync: ${beforeGettingUntitledWorkspaces}`);
 		}
-		assert.equal(2, untitled.length);
+		assert.strictEqual(2, untitled.length);
 
 		service.deleteUntitledWorkspaceSync(untitledOne);
 		untitled = service.getUntitledWorkspacesSync();
-		assert.equal(1, untitled.length);
+		assert.strictEqual(1, untitled.length);
 
 		service.deleteUntitledWorkspaceSync(untitledTwo);
 		untitled = service.getUntitledWorkspacesSync();
-		assert.equal(0, untitled.length);
+		assert.strictEqual(0, untitled.length);
+	});
+
+	test('getSingleWorkspaceIdentifier', async function () {
+		const nonLocalUri = URI.parse('myscheme://server/work/p/f1');
+		const nonLocalUriId = getSingleFolderWorkspaceIdentifier(nonLocalUri);
+		assert.ok(nonLocalUriId?.id);
+
+		const localNonExistingUri = URI.file(path.join(testDir, 'f1'));
+		const localNonExistingUriId = getSingleFolderWorkspaceIdentifier(localNonExistingUri);
+		assert.ok(!localNonExistingUriId);
+
+		fs.mkdirSync(path.join(testDir, 'f1'));
+
+		const localExistingUri = URI.file(path.join(testDir, 'f1'));
+		const localExistingUriId = getSingleFolderWorkspaceIdentifier(localExistingUri);
+		assert.ok(localExistingUriId?.id);
+	});
+
+	test('workspace identifiers are stable', function () {
+
+		// workspace identifier (local)
+		assert.strictEqual(getWorkspaceIdentifier(URI.file('/hello/test')).id, isWindows  /* slash vs backslash */ ? '9f3efb614e2cd7924e4b8076e6c72233' : 'e36736311be12ff6d695feefe415b3e8');
+
+		// single folder identifier (local)
+		const fakeStat = {
+			ino: 1611312115129,
+			birthtimeMs: 1611312115129,
+			birthtime: new Date(1611312115129)
+		};
+		assert.strictEqual(getSingleFolderWorkspaceIdentifier(URI.file('/hello/test'), fakeStat as fs.Stats)?.id, isWindows /* slash vs backslash */ ? '9a8441e897e5174fa388bc7ef8f7a710' : '1d726b3d516dc2a6d343abf4797eaaef');
+
+		// workspace identifier (remote)
+		assert.strictEqual(getWorkspaceIdentifier(URI.parse('vscode-remote:/hello/test')).id, '786de4f224d57691f218dc7f31ee2ee3');
+
+		// single folder identifier (remote)
+		assert.strictEqual(getSingleFolderWorkspaceIdentifier(URI.parse('vscode-remote:/hello/test'))?.id, '786de4f224d57691f218dc7f31ee2ee3');
 	});
 });

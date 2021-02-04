@@ -22,7 +22,6 @@ export const statePriority: { [K in TestRunState]: number } = {
 	[TestRunState.Unset]: 0,
 };
 
-
 export const isFailedState = (s: TestRunState) => s === TestRunState.Errored || s === TestRunState.Failed;
 
 export const stateNodes = Object.entries(statePriority).reduce(
@@ -38,3 +37,5 @@ export const cmpPriority = (a: TestRunState, b: TestRunState) => statePriority[b
 export const maxPriority = (a: TestRunState, b: TestRunState) => statePriority[a] > statePriority[b] ? a : b;
 
 export const statesInOrder = Object.keys(statePriority).map(s => Number(s) as TestRunState).sort(cmpPriority);
+
+export const isRunningState = (s: TestRunState) => s === TestRunState.Queued || s === TestRunState.Running;
