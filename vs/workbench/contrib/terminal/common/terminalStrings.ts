@@ -4,6 +4,9 @@
  *--------------------------------------------------------------------------------------------*/
 
 /**
- * Returns the user data path to use.
+ * Formats a message from the product to be written to the terminal.
  */
-export function getDefaultUserDataPath(): string;
+export function formatMessageForTerminal(message: string): string {
+	// Wrap in bold and ensure it's on a new line
+	return `\r\n\x1b[1m${message}\x1b[0m\n\r`;
+}
