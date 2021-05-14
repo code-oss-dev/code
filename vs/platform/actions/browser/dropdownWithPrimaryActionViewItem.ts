@@ -11,26 +11,29 @@ import * as DOM from 'vs/base/browser/dom';
 import { StandardKeyboardEvent } from 'vs/base/browser/keyboardEvent';
 import { KeyCode } from 'vs/base/common/keyCodes';
 import { dispose, IDisposable } from 'vs/base/common/lifecycle';
+import { MenuItemAction } from 'vs/platform/actions/common/actions';
+import { MenuEntryActionViewItem } from 'vs/platform/actions/browser/menuEntryActionViewItem';
+import { IKeybindingService } from 'vs/platform/keybinding/common/keybinding';
+import { INotificationService } from 'vs/platform/notification/common/notification';
 
 export class DropdownWithPrimaryActionViewItem extends BaseActionViewItem {
 	private _primaryAction: ActionViewItem;
 	private _dropdown: DropdownMenuActionViewItem;
 	private _container: HTMLElement | null = null;
+	private _dropdownContainer: HTMLElement | null = null;
 	private toDispose: IDisposable[];
 
 	constructor(
-		primaryAction: IAction,
+		primaryAction: MenuItemAction,
 		dropdownAction: IAction,
 		dropdownMenuActions: IAction[],
-		_className: string,
+		className: string,
 		private readonly _contextMenuProvider: IContextMenuProvider,
-		dropdownIcon?: string
+		_keybindingService: IKeybindingService,
+		_notificationService: INotificationService
 	) {
 		super(null, primaryAction);
-		this._primaryAction = new ActionViewItem(undefined, primaryAction, {
-			icon: true,
-			label: false
-		});
+		this._primaryAction = new MenuEntryActionViewItem(primaryAction, _keybindingService, _notificationService);
 		this._dropdown = new DropdownMenuActionViewItem(dropdownAction, dropdownMenuActions, this._contextMenuProvider, {
 			menuAsChild: true
 		});
@@ -43,9 +46,8 @@ export class DropdownWithPrimaryActionViewItem extends BaseActionViewItem {
 		this._container.classList.add('monaco-dropdown-with-primary');
 		const primaryContainer = DOM.$('.action-container');
 		this._primaryAction.render(DOM.append(this._container, primaryContainer));
-		const dropdownContainer = DOM.$('.dropdown-action-container');
-		this._dropdown.render(DOM.append(this._container, dropdownContainer));
-
+		this._dropdownContainer = DOM.$('.dropdown-action-container');
+		this._dropdown.render(DOM.append(this._container, this._dropdownContainer));
 		this.toDispose.push(DOM.addDisposableListener(primaryContainer, DOM.EventType.KEY_DOWN, (e: KeyboardEvent) => {
 			const event = new StandardKeyboardEvent(e);
 			if (event.equals(KeyCode.RightArrow)) {
@@ -54,7 +56,7 @@ export class DropdownWithPrimaryActionViewItem extends BaseActionViewItem {
 				event.stopPropagation();
 			}
 		}));
-		this.toDispose.push(DOM.addDisposableListener(dropdownContainer, DOM.EventType.KEY_DOWN, (e: KeyboardEvent) => {
+		this.toDispose.push(DOM.addDisposableListener(this._dropdownContainer, DOM.EventType.KEY_DOWN, (e: KeyboardEvent) => {
 			const event = new StandardKeyboardEvent(e);
 			if (event.equals(KeyCode.LeftArrow)) {
 				this._primaryAction.element!.tabIndex = 0;
@@ -99,8 +101,8 @@ export class DropdownWithPrimaryActionViewItem extends BaseActionViewItem {
 			menuAsChild: true,
 			classNames: ['codicon', dropdownIcon || 'codicon-chevron-down']
 		});
-		if (this.element) {
-			this._dropdown.render(this.element);
+		if (this._dropdownContainer) {
+			this._dropdown.render(this._dropdownContainer);
 		}
 	}
 }
