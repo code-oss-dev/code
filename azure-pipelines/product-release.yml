@@ -1,7 +1,7 @@
 steps:
   - task: NodeTool@0
     inputs:
-      versionSpec: "12.18.3"
+      versionSpec: "14.x"
 
   - task: geeklearningio.gl-vsts-tasks-yarn.yarn-installer-task.YarnInstaller@2
     inputs:
@@ -12,6 +12,7 @@ steps:
     inputs:
       azureSubscription: "vscode-builds-subscription"
       KeyVaultName: vscode
+      SecretsFilter: 'builds-docdb-key-readwrite'
 
   - script: |
       set -e
@@ -19,6 +20,4 @@ steps:
       (cd build ; yarn)
 
       AZURE_DOCUMENTDB_MASTERKEY="$(builds-docdb-key-readwrite)" \
-      AZURE_STORAGE_ACCESS_KEY_2="$(vscode-storage-key)" \
-      MOONCAKE_STORAGE_ACCESS_KEY="$(vscode-mooncake-storage-key)" \
-      node build/azure-pipelines/common/sync-mooncake.js "$VSCODE_QUALITY"
+      node build/azure-pipelines/common/releaseBuild.js
