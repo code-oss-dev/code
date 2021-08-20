@@ -3,14 +3,10 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { URI } from 'vs/base/common/uri';
 import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
 
-export const ILanguageDetectionService = createDecorator<ILanguageDetectionService>('ILanguageDetectionService');
+export const INotebookKeymapService = createDecorator<INotebookKeymapService>('notebookKeymapService');
 
-export interface ILanguageDetectionService {
+export interface INotebookKeymapService {
 	readonly _serviceBrand: undefined;
-
-	detectLanguage(contentOrResource: string | URI): Promise<string | undefined>;
-	detectLanguages(contentOrResource: string | URI): Promise<string[]>;
 }
