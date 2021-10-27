@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { ILogService } from 'vs/platform/log/common/log';
-import { Disposable } from 'vs/base/common/lifecycle';
+import { Disposable, DisposableStore, IDisposable, toDisposable } from 'vs/base/common/lifecycle';
 import { ISharedProcessService } from 'vs/platform/ipc/electron-sandbox/services';
 import { Client as MessagePortClient } from 'vs/base/parts/ipc/common/ipc.mp';
 import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
@@ -12,8 +12,13 @@ import { ipcSharedProcessWorkerChannelName, ISharedProcessWorkerProcess, IShared
 import { getDelayedChannel, IChannel, ProxyChannel } from 'vs/base/parts/ipc/common/ipc';
 import { generateUuid } from 'vs/base/common/uuid';
 import { acquirePort } from 'vs/base/parts/ipc/electron-sandbox/ipc.mp';
+import { CancellationToken, CancellationTokenSource } from 'vs/base/common/cancellation';
 
 export const ISharedProcessWorkerWorkbenchService = createDecorator<ISharedProcessWorkerWorkbenchService>('sharedProcessWorkerWorkbenchService');
+
+export interface IWorkerChannel extends IDisposable {
+	channel: IChannel;
+}
 
 export interface ISharedProcessWorkerWorkbenchService {
 
@@ -26,10 +31,23 @@ export interface ISharedProcessWorkerWorkbenchService {
 	 * Requires the forked process to be AMD module that uses our IPC channel framework
 	 * to respond to the provided `channelName` as a server.
 	 *
+	 * The process will be automatically terminated when the workbench window closes,
+	 * crashes or loads/reloads.
+	 *
+	 * Note on affinity: repeated calls to `createWorkerChannel` with the same `moduleId`
+	 * from the same window will result in any previous forked process to get terminated.
+	 * In other words, it is not possible, nor intended to create multiple workers of
+	 * the same process from one window. The intent of these workers is to be reused per
+	 * window and the communication channel allows to dynamically update the processes
+	 * after the fact.
+	 *
 	 * @param process information around the process to fork
 	 * @param channelName the name of the channel the process will respond to
+	 *
+	 * @returns the worker channel to communicate with. Provides a `dispose` method that
+	 * allows to terminate the worker if needed.
 	 */
-	createWorkerChannel(process: ISharedProcessWorkerProcess, channelName: string): IChannel;
+	createWorkerChannel(process: ISharedProcessWorkerProcess, channelName: string): IWorkerChannel;
 }
 
 export class SharedProcessWorkerWorkbenchService extends Disposable implements ISharedProcessWorkerWorkbenchService {
@@ -53,12 +71,21 @@ export class SharedProcessWorkerWorkbenchService extends Disposable implements I
 		super();
 	}
 
-	createWorkerChannel(process: ISharedProcessWorkerProcess, channelName: string): IChannel {
-		return getDelayedChannel(this.doCreateWorkerChannel(process).then(connection => connection.getChannel(channelName)));
+	createWorkerChannel(process: ISharedProcessWorkerProcess, channelName: string): IWorkerChannel {
+		const cts = new CancellationTokenSource();
+
+		return {
+			channel: getDelayedChannel(this.doCreateWorkerChannel(process, channelName, cts.token)),
+			dispose: () => cts.dispose(true)
+		};
 	}
 
-	private async doCreateWorkerChannel(process: ISharedProcessWorkerProcess): Promise<MessagePortClient> {
+	private async doCreateWorkerChannel(process: ISharedProcessWorkerProcess, channelName: string, token: CancellationToken): Promise<IChannel> {
 		this.logService.trace('Renderer->SharedProcess#createWorkerChannel');
+
+		// Dispose when cancelled
+		const disposables = new DisposableStore();
+		token.onCancellationRequested(() => disposables.dispose());
 
 		// Get ready to acquire the message port from the shared process worker
 		const nonce = generateUuid();
@@ -66,15 +93,28 @@ export class SharedProcessWorkerWorkbenchService extends Disposable implements I
 		const portPromise = acquirePort(undefined /* we trigger the request via service call! */, responseChannel, nonce);
 
 		// Actually talk with the shared process service
+		// to create a new process from a worker
 		this.sharedProcessWorkerService.createWorker({
 			process,
 			reply: { windowId: this.windowId, channel: responseChannel, nonce }
 		});
 
+		// Dispose worker upon disposal via shared process service
+		disposables.add(toDisposable(() => {
+			this.logService.trace('Renderer->SharedProcess#disposeWorker', process);
+
+			this.sharedProcessWorkerService.disposeWorker({
+				process,
+				reply: { windowId: this.windowId }
+			});
+		}));
+
 		const port = await portPromise;
 
 		this.logService.trace('Renderer->SharedProcess#createWorkerChannel: connection established');
 
-		return this._register(new MessagePortClient(port, `window:${this.windowId},module:${process.moduleId}`));
+		const client = disposables.add(new MessagePortClient(port, `window:${this.windowId},module:${process.moduleId}`));
+
+		return client.getChannel(channelName);
 	}
 }
