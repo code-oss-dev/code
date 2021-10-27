@@ -3,16 +3,15 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 import { escapeRegExpCharacters } from 'vs/base/common/strings';
-import { toLength } from 'vs/editor/common/model/bracketPairColorizer/length';
-import { SmallImmutableSet, DenseKeyProvider, identityKeyProvider } from 'vs/editor/common/model/bracketPairColorizer/smallImmutableSet';
-import { LanguageId } from 'vs/editor/common/modes';
 import { ResolvedLanguageConfiguration } from 'vs/editor/common/modes/languageConfigurationRegistry';
 import { BracketAstNode } from './ast';
+import { toLength } from './length';
+import { DenseKeyProvider, identityKeyProvider, SmallImmutableSet } from './smallImmutableSet';
 import { OpeningBracketId, Token, TokenKind } from './tokenizer';
 
 export class BracketTokens {
 	static createFromLanguage(configuration: ResolvedLanguageConfiguration, denseKeyProvider: DenseKeyProvider<string>): BracketTokens {
-		function getId(languageId: LanguageId, openingText: string): OpeningBracketId {
+		function getId(languageId: string, openingText: string): OpeningBracketId {
 			return denseKeyProvider.getKey(`${languageId}:::${openingText}`);
 		}
 
@@ -25,7 +24,7 @@ export class BracketTokens {
 			openingBrackets.add(openingText);
 
 			let info = closingBrackets.get(closingText);
-			const openingTextId = getId(configuration.languageIdentifier.id, openingText);
+			const openingTextId = getId(configuration.languageId, openingText);
 			if (!info) {
 				info = { openingBrackets: SmallImmutableSet.getEmpty(), first: openingTextId };
 				closingBrackets.set(closingText, info);
@@ -48,7 +47,7 @@ export class BracketTokens {
 
 		for (const openingText of openingBrackets) {
 			const length = toLength(0, openingText.length);
-			const openingTextId = getId(configuration.languageIdentifier.id, openingText);
+			const openingTextId = getId(configuration.languageId, openingText);
 			map.set(openingText, new Token(
 				length,
 				TokenKind.OpeningBracket,
@@ -75,7 +74,7 @@ export class BracketTokens {
 			const keys = [...this.map.keys()];
 			keys.sort();
 			keys.reverse();
-			return keys.map(k => escapeRegExpCharacters(k)).join('|');
+			return keys.map(k => prepareBracketForRegExp(k)).join('|');
 		}
 	}
 
@@ -100,16 +99,23 @@ export class BracketTokens {
 	}
 }
 
+function prepareBracketForRegExp(str: string): string {
+	const escaped = escapeRegExpCharacters(str);
+	// This bracket pair uses letters like e.g. "begin" - "end" (see https://github.com/microsoft/vscode/issues/132162)
+	const needsWordBoundaries = (/^[\w ]+$/.test(str));
+	return (needsWordBoundaries ? `\\b${escaped}\\b` : escaped);
+}
+
 export class LanguageAgnosticBracketTokens {
-	private readonly languageIdToBracketTokens: Map<LanguageId, BracketTokens> = new Map();
+	private readonly languageIdToBracketTokens = new Map<string, BracketTokens>();
 
 	constructor(
 		private readonly denseKeyProvider: DenseKeyProvider<string>,
-		private readonly getLanguageConfiguration: (languageId: LanguageId) => ResolvedLanguageConfiguration,
+		private readonly getLanguageConfiguration: (languageId: string) => ResolvedLanguageConfiguration,
 	) {
 	}
 
-	public didLanguageChange(languageId: LanguageId): boolean {
+	public didLanguageChange(languageId: string): boolean {
 		const existing = this.languageIdToBracketTokens.get(languageId);
 		if (!existing) {
 			return false;
@@ -118,7 +124,7 @@ export class LanguageAgnosticBracketTokens {
 		return existing.getRegExpStr() !== newRegExpStr;
 	}
 
-	getSingleLanguageBracketTokens(languageId: LanguageId): BracketTokens {
+	getSingleLanguageBracketTokens(languageId: string): BracketTokens {
 		let singleLanguageBracketTokens = this.languageIdToBracketTokens.get(languageId);
 		if (!singleLanguageBracketTokens) {
 			singleLanguageBracketTokens = BracketTokens.createFromLanguage(this.getLanguageConfiguration(languageId), this.denseKeyProvider);
@@ -127,7 +133,7 @@ export class LanguageAgnosticBracketTokens {
 		return singleLanguageBracketTokens;
 	}
 
-	getToken(value: string, languageId: LanguageId): Token | undefined {
+	getToken(value: string, languageId: string): Token | undefined {
 		const singleLanguageBracketTokens = this.getSingleLanguageBracketTokens(languageId);
 		return singleLanguageBracketTokens.getToken(value);
 	}
