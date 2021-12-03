@@ -1,12 +1,85 @@
 The notebook editor is a virtualized list view rendered in two contexts (mainframe and webview/iframe). It's on top of the builtin list/tree view renderer but its experience is different from traditional list views like File Explorer and Settings Editor. This doc covers the architecture of the notebook editor and layout optimiziations we experimented.
 
-# Archtecture
+* [Architecture](#architecture)
+  * [Notebook model resolution](#notebook-model-resolution)
+  * [Viewport rendering](#viewport-rendering)
+  * [Cell rendering](#cell-rendering)
+  * [Focus tracking](#focus-tracking)
+* [Optimizations](#optimizations)
+  * [Executing code cell followed by markdown cells](#executing-code-cell-followed-by-markdown-cells)
+  * [Re-executing code cell followed by markdown cells](#re-executing-code-cell-followed-by-markdown-cells)
+  * [Scrolling](#scrolling)
+
+
+# Architecture
 
 ## Notebook model resolution
 
+The notebook model resolution consists of two main parts
+
+* Resolving the raw data (bytes) of the resource from file service. This part is backed by the `WorkingCopyService` and it will resolve the data and broadcast updates when the resource is updated on file system.
+* Requesting the contributed notebook serializer to serialize/deserize the raw bytes for the resource. We will find the best matched notebook serializer (by user's editor type configuration and serializer's selector defintion) and convert the raw bytes from/to `NotebookTextModel`.
+
+`NotebookTextModel` is the only source of truth for the notebook document once the resource is opened in the workspace. The source text of each individual cell in the notebook is backed by a piece tree text buffer. When the notebook is opened in the editor group, we will request the `TextModelResolverModelService` for the monaco `TextModel` reference for each cell. The `TextModel` will use the piece tree text buffer from the cell as the backing store so whenver the `TextModel` gets udpated, the cells in `NotebookTextModel` are always up to date.
+
+Since we are using the `TextModelResolverModelService` for cell's text model resolution, the `TextModel`s will have a mirror in the extension host, just like a normal resource opened in a text editor. Extensions can treat them as normal text documents.
 
 ![arch](https://user-images.githubusercontent.com/876920/141845889-abe0384e-0093-4b08-831a-04424a4b8101.png)
 
+## Viewport rendering
+
+The veiewport rendering of notebook list view is a "guess and validate" process. It will calcuate how many cells/rows it can render within the viewport first, have them all rendered, and then ask for their real dimensions, and based on the cell/row dimensions it will decide if it needs to render more cells (if there are still some room in the viewport) or remove a few.
+
+For short, the process is more or less
+
+* Render cell/row (DOM write)
+* Read dimensions (DOM read)
+
+The catch here is if we happen to perform any DOM read operation between DOM write while rendering a cell, it will trigger forced reflow and block the UI. To make it even worse, there are multiple components in a cell and often they are not aware of the existence of each other. When one component is updating its own DOM content, another component might be reading DOM dimensions at the same time. To prevent the unnecessary forced reflow from happening too often, we introduced the concept of `CellPart`. A `CellPart` is an abstract component in a cell and its lifecycle consists of four phases:
+
+* Creation. `CellPart` is usually created on cell template
+* Attach cell. When a cell is being rendered, we would attach the cell with all `CellPart`s by invoking `CellPart#renderCell`.
+* Read DOM dimensions. All DOM read operation should be performed in this phase to prepare for the layout update. `CellPart#prepareLayout` will invoked.
+* Update DOM positions. Once the list view finish reading DOM dimensions of all `CellPart`s, it will ask each `CellPart` to update its internal DOM nodes' positions, by invoking `CellPart#updateLayoutNow`.
+
+When we introduce new UI elements to notebook cell, we would make it a `CellPart` and ensure that we batch the DOM read and write operations in the right phases.
+
+```ts
+export abstract class CellPart extends Disposable {
+	constructor() {
+		super();
+	}
+
+	/**
+	 * Update the DOM for the cell `element`
+	 */
+	abstract renderCell(element: ICellViewModel, templateData: BaseCellRenderTemplate): void;
+
+	/**
+	 * Perform DOM read operations to prepare for the list/cell layout update.
+	 */
+	abstract prepareLayout(): void;
+
+	/**
+	 * Update DOM per cell layout info change
+	 */
+	abstract updateLayoutNow(element: ICellViewModel): void;
+
+	/**
+	 * Update per cell state change
+	 */
+	abstract updateState(element: ICellViewModel, e: CellViewModelStateChangeEvent): void;
+}
+```
+
+![render viewport](./viewport-rendering.drawio.svg)
+
+<!-- ![render in the core](https://user-images.githubusercontent.com/876920/142806570-a477d315-40f3-4e0c-8079-f2867d5f3e88.png) -->
+
+When the notebook document contains markdown cells or rich outputs, the workflow is a bit more complex and become asynchornously partially due to the fact the markdown and rich outputs are rendered in a separate webview/iframe. While the list view renders the cell/row, it will send requests to the webview for output rendering, the rendering result (like dimensions of the output elements) won't come back in current frame. Once we receive the output rendering results from the webview (say next frame), we would ask the list view to adjust the position/dimension of the cell and ones below.
+
+
+![render outputs in the webview/iframe](https://user-images.githubusercontent.com/876920/142923784-4e7a297c-6ce4-4741-b306-cbfb3277699b.png)
 
 ## Cell rendering
 
