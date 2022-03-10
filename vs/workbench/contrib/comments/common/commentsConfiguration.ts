@@ -3,15 +3,9 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-export const EDITOR_MODEL_DEFAULTS = {
-	tabSize: 4,
-	indentSize: 4,
-	insertSpaces: true,
-	detectIndentation: true,
-	trimAutoWhitespace: true,
-	largeFileOptimizations: true,
-	bracketPairColorizationOptions: {
-		enabled: true,
-		useIndependentColorPoolPerBracketType: false,
-	},
-};
+export interface ICommentsConfiguration {
+	openView: 'never' | 'file';
+	useRelativeTime: boolean;
+}
+
+export const COMMENTS_SECTION = 'comments';
