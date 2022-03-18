@@ -4,8 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { Event } from 'vs/base/common/event';
-import { CwdDetectionCapability } from 'vs/workbench/contrib/terminal/common/capabilities/cwdDetectionCapability';
-import { NaiveCwdDetectionCapability } from 'vs/workbench/contrib/terminal/common/capabilities/naiveCwdDetectionCapability';
+import { ISerializedCommandDetectionCapability } from 'vs/platform/terminal/common/terminalProcess';
 
 /**
  * Primarily driven by the shell integration feature, a terminal capability is the mechanism for
@@ -69,15 +68,27 @@ export interface ITerminalCapabilityStore {
  * implementations.
  */
 export interface ITerminalCapabilityImplMap {
-	[TerminalCapability.CwdDetection]: InstanceType<typeof CwdDetectionCapability>;
+	[TerminalCapability.CwdDetection]: ICwdDetectionCapability;
 	[TerminalCapability.CommandDetection]: ICommandDetectionCapability;
-	[TerminalCapability.NaiveCwdDetection]: InstanceType<typeof NaiveCwdDetectionCapability>;
+	[TerminalCapability.NaiveCwdDetection]: INaiveCwdDetectionCapability;
 	[TerminalCapability.PartialCommandDetection]: IPartialCommandDetectionCapability;
+}
+
+export interface ICwdDetectionCapability {
+	readonly type: TerminalCapability.CwdDetection;
+	readonly onDidChangeCwd: Event<string>;
+	readonly cwds: string[];
+	getCwd(): string;
+	updateCwd(cwd: string): void;
 }
 
 export interface ICommandDetectionCapability {
 	readonly type: TerminalCapability.CommandDetection;
 	readonly commands: readonly ITerminalCommand[];
+	/** The command currently being executed, otherwise undefined. */
+	readonly executingCommand: string | undefined;
+	/** The current cwd at the cursor's position. */
+	readonly cwd: string | undefined;
 	readonly onCommandStarted: Event<ITerminalCommand>;
 	readonly onCommandFinished: Event<ITerminalCommand>;
 	setCwd(value: string): void;
@@ -90,6 +101,8 @@ export interface ICommandDetectionCapability {
 	handlePromptStart(): void;
 	handleContinuationStart(): void;
 	handleContinuationEnd(): void;
+	handleRightPromptStart(): void;
+	handleRightPromptEnd(): void;
 	handleCommandStart(): void;
 	handleCommandExecuted(): void;
 	handleCommandFinished(exitCode: number | undefined): void;
@@ -97,6 +110,14 @@ export interface ICommandDetectionCapability {
 	 * Set the command line explicitly.
 	 */
 	setCommandLine(commandLine: string): void;
+	serialize(): ISerializedCommandDetectionCapability;
+	deserialize(serialized: ISerializedCommandDetectionCapability): void;
+}
+
+export interface INaiveCwdDetectionCapability {
+	readonly type: TerminalCapability.NaiveCwdDetection;
+	readonly onDidChangeCwd: Event<string>;
+	getCwd(): Promise<string>;
 }
 
 export interface IPartialCommandDetectionCapability {
@@ -112,6 +133,8 @@ export interface ITerminalCommand {
 	exitCode?: number;
 	marker?: IXtermMarker;
 	endMarker?: IXtermMarker;
+	executedMarker?: IXtermMarker;
+	commandStartLineContent?: string;
 	getOutput(): string | undefined;
 	hasOutput: boolean;
 }
