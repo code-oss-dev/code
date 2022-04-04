@@ -229,7 +229,7 @@ export interface ITestRunTask {
 }
 
 export interface ITestTag {
-	id: string;
+	readonly id: string;
 }
 
 const testTagDelimiter = '\0';
@@ -244,7 +244,6 @@ export const denamespaceTestTag = (namespaced: string) => {
 
 export interface ITestTagDisplayInfo {
 	id: string;
-	ctrlLabel: string;
 }
 
 /**
@@ -419,8 +418,6 @@ export interface TestResultItem extends InternalTestItem {
 	ownComputedState: TestResultState;
 	/** Computed state based on children */
 	computedState: TestResultState;
-	/** True if the test is outdated */
-	retired: boolean;
 	/** Max duration of the item's tasks (if run directly) */
 	ownDuration?: number;
 }
@@ -564,7 +561,7 @@ export interface ITestItemContext {
 	/** Marshalling marker */
 	$mid: MarshalledId.TestItemContext;
 	/** Tests and parents from the root to the current items */
-	tests: InternalTestItem[];
+	tests: InternalTestItem.Serialized[];
 }
 
 /**
