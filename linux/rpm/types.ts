@@ -3,11 +3,4 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { retry } from './retry';
-const { installDefaultBrowsersForNpmInstall } = require('playwright-core/lib/server');
-
-async function install() {
-	await retry(() => installDefaultBrowsersForNpmInstall());
-}
-
-install();
+export type ArchString = 'x86_64' | 'armv7hl' | 'aarch64';
