@@ -4,8 +4,8 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.isRpmArchString = void 0;
-function isRpmArchString(s) {
-    return ['x86_64', 'armv7hl', 'aarch64'].includes(s);
+exports.isDebianArchString = void 0;
+function isDebianArchString(s) {
+    return ['amd64', 'armhf', 'arm64'].includes(s);
 }
-exports.isRpmArchString = isRpmArchString;
+exports.isDebianArchString = isDebianArchString;

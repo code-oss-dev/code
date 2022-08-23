@@ -4,8 +4,12 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.isRpmArchString = void 0;
-function isRpmArchString(s) {
-    return ['x86_64', 'armv7hl', 'aarch64'].includes(s);
+const fs = require("fs");
+const path = require("path");
+const crypto = require("crypto");
+const productjson = JSON.parse(fs.readFileSync(path.join(__dirname, '../../../product.json'), 'utf8'));
+const shasum = crypto.createHash('sha1');
+for (const ext of productjson.builtInExtensions) {
+    shasum.update(`${ext.name}@${ext.version}`);
 }
-exports.isRpmArchString = isRpmArchString;
+process.stdout.write(shasum.digest('hex'));
