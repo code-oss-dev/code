@@ -3,12 +3,15 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { NativeParsedArgs } from 'vs/platform/environment/common/argv';
+declare module 'vscode' {
+	// https://github.com/microsoft/vscode/issues/161144
+	export enum NotebookControllerAffinity2 {
+		Default = 1,
+		Preferred = 2,
+		Hidden = -1
+	}
 
-/**
- * Returns the user data path to use with some rules:
- * - respect portable mode
- * - respect VSCODE_APPDATA environment variable
- * - respect --user-data-dir CLI argument
- */
-export function getUserDataPath(args: NativeParsedArgs, productName: string): string;
+	export interface NotebookController {
+		updateNotebookAffinity(notebook: NotebookDocument, affinity: NotebookControllerAffinity | NotebookControllerAffinity2): void;
+	}
+}
