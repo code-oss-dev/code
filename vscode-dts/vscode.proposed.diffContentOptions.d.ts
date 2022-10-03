@@ -4,12 +4,13 @@
  *--------------------------------------------------------------------------------------------*/
 
 declare module 'vscode' {
+	// TODO@rebornix: add github issue link
 
-	// https://github.com/microsoft/vscode/issues/145374
-
-	interface WorkspaceEdit {
-
-		// todo@API have a SnippetTextEdit and allow to set that?
-		replace(uri: Uri, range: Range, newText: string | SnippetString, metadata?: WorkspaceEditEntryMetadata): void;
+	export interface NotebookDocumentContentOptions {
+		/**
+		 * Controls if a cell metadata property should be reverted when the cell content
+		 * is reverted in notebook diff editor.
+		 */
+		cellContentMetadata?: { [key: string]: boolean | undefined };
 	}
 }
