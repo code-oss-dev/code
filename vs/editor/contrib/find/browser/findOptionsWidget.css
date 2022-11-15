@@ -3,10 +3,9 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-declare module 'vscode' {
-
-	// https://github.com/microsoft/vscode/issues/149271
-
-	// ❗️ Important: The main NotebookEditor api has been finalized.
-	// This file only tracks the `notebook/cell/executePrimary` contribution, which will be removed
+.monaco-editor .findOptionsWidget {
+	background-color: var(--vscode-editorWidget-background);
+	color: var(--vscode-editorWidget-foreground);
+	box-shadow: 0 0 8px 2px var(--vscode-widget-shadow);
+	border: 2px solid var(--vscode-contrastBorder);
 }
